@@ -9,6 +9,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
+        android:fitsSystemWindows="true"
         android:padding="20dp">
 
         <!-- ============ 态 A：门界面 ============ -->
