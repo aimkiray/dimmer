@@ -21,17 +21,19 @@ class MainActivity : AppCompatActivity(), OplusSliderGuard.Listener {
 
     private var suppress = false
 
-    private lateinit var gateGroup: LinearLayout
+    private lateinit var gateGroup: android.widget.ScrollView
     private lateinit var mainGroup: LinearLayout
     private lateinit var tvGrantCmd: TextView
     private lateinit var tvGrantCmdAlt: TextView
     private lateinit var btnCopyGrant: Button
     private lateinit var btnCopyGrantAlt: Button
     private lateinit var btnRecheck: Button
-    private lateinit var banner: LinearLayout
+    private lateinit var banner: com.google.android.material.card.MaterialCardView
     private lateinit var tvBannerText: TextView
     private lateinit var btnGoSettings: Button
     private lateinit var btnApplyAnyway: Button
+    private lateinit var btnCloseBanner: TextView
+    private var bannerDismissed = false
     private lateinit var masterSwitch: MaterialSwitch
     private lateinit var tvMasterState: TextView
     private lateinit var levelSlider: Slider
@@ -72,7 +74,7 @@ class MainActivity : AppCompatActivity(), OplusSliderGuard.Listener {
 
     private fun bindViews() {
         rootView = findViewById(R.id.root)
-        gateGroup = findViewById(R.id.gateGroup)
+        gateGroup = findViewById(R.id.gateScroll)
         mainGroup = findViewById(R.id.mainGroup)
         tvGrantCmd = findViewById(R.id.tvGrantCmd)
         tvGrantCmdAlt = findViewById(R.id.tvGrantCmdAlt)
@@ -83,6 +85,11 @@ class MainActivity : AppCompatActivity(), OplusSliderGuard.Listener {
         tvBannerText = findViewById(R.id.tvBannerText)
         btnGoSettings = findViewById(R.id.btnGoSettings)
         btnApplyAnyway = findViewById(R.id.btnApplyAnyway)
+        btnCloseBanner = findViewById(R.id.btnCloseBanner)
+        btnCloseBanner.setOnClickListener {
+            bannerDismissed = true
+            banner.visibility = View.GONE
+        }
         masterSwitch = findViewById(R.id.masterSwitch)
         tvMasterState = findViewById(R.id.tvMasterState)
         levelSlider = findViewById(R.id.levelSlider)
@@ -250,17 +257,21 @@ class MainActivity : AppCompatActivity(), OplusSliderGuard.Listener {
         val intervening = controller.isOplusIntervening()
         val extOff = !intervening && prefs.masterOn && controller.readActivated() == 0
         when {
-            intervening -> {
+            intervening && !bannerDismissed -> {
                 tvBannerText.text = getString(R.string.banner_text)
                 btnGoSettings.visibility = View.VISIBLE
                 banner.visibility = View.VISIBLE
             }
-            extOff -> {
+            extOff && !bannerDismissed -> {
                 tvBannerText.text = getString(R.string.banner_text_extoff)
                 btnGoSettings.visibility = View.GONE
                 banner.visibility = View.VISIBLE
             }
-            else -> banner.visibility = View.GONE
+            else -> {
+                banner.visibility = View.GONE
+                // 条件消失即解除本次关闭，下一次介入/外部关闭重新弹出
+                if (!intervening && !extOff) bannerDismissed = false
+            }
         }
     }
 

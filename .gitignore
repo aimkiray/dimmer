@@ -11,3 +11,5 @@
 .cxx
 local.properties
 /reports/
+/keystore/
+keystore.properties

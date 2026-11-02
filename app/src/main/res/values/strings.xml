@@ -18,6 +18,8 @@
     <string name="banner_text_extoff">检测到本 App 的调暗被外部关闭（activated=0，非系统滑块介入）。如需恢复，可点「仍然应用」重新写入。</string>
     <string name="btn_go_settings">去系统设置</string>
     <string name="btn_apply_anyway">仍然应用</string>
+    <string name="banner_close">✕</string>
+    <string name="banner_close_desc">关闭警示</string>
     <string name="master_label">调暗总开关</string>
     <string name="state_on">当前：开</string>
     <string name="state_off">当前：关</string>
