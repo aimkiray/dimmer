@@ -42,21 +42,11 @@
                 android:text="@string/gate_status" />
 
             <TextView
-                android:id="@+id/tvGrantCmd"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                android:background="@color/cmd_bg"
-                android:padding="10dp"
-                android:textIsSelectable="true"
-                android:typeface="monospace" />
-
-            <Button
-                android:id="@+id/btnCopyGrant"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:text="@string/btn_copy_grant" />
+                android:text="@string/gate_prereq"
+                android:textSize="13sp" />
 
             <TextView
                 android:layout_width="match_parent"
@@ -82,19 +72,36 @@
                 android:layout_marginTop="10dp"
                 android:text="@string/btn_copy_grant_alt" />
 
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="@string/gate_primary_text"
+                android:textSize="13sp" />
+
+            <TextView
+                android:id="@+id/tvGrantCmd"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@color/cmd_bg"
+                android:padding="10dp"
+                android:textIsSelectable="true"
+                android:typeface="monospace" />
+
+            <Button
+                android:id="@+id/btnCopyGrant"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="@string/btn_copy_grant" />
+
             <Button
                 android:id="@+id/btnRecheck"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:text="@string/btn_recheck" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:text="@string/gate_prereq"
-                android:textSize="13sp" />
         </LinearLayout>
         </ScrollView>
 
@@ -141,6 +148,7 @@
                 android:id="@+id/levelSlider"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:contentDescription="@string/slider_label"
                 android:valueFrom="0"
                 android:valueTo="100"
                 android:stepSize="1"
@@ -275,7 +283,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
                 android:text="@string/info_text"
-                android:textSize="11sp" />
+                android:textSize="12sp" />
         </LinearLayout>
     </LinearLayout>
 
@@ -288,6 +296,8 @@
         android:layout_marginHorizontal="12dp"
         android:layout_marginTop="8dp"
         android:visibility="gone"
+        android:clickable="true"
+        android:focusable="true"
         app:cardBackgroundColor="@color/banner_yellow"
         app:cardCornerRadius="12dp"
         app:cardElevation="8dp">
@@ -315,7 +325,9 @@
                     android:id="@+id/btnCloseBanner"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:padding="8dp"
+                    android:minWidth="48dp"
+                    android:minHeight="48dp"
+                    android:gravity="center"
                     android:text="@string/banner_close"
                     android:contentDescription="@string/banner_close_desc"
                     android:textColor="@color/banner_text"

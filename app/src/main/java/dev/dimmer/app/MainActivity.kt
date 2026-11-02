@@ -217,9 +217,10 @@ class MainActivity : AppCompatActivity(), OplusSliderGuard.Listener {
             val mirrorOn = prefs.masterOn && prefs.lastApplyOk
             val on = (act ?: if (mirrorOn) 1 else 0) == 1
             masterSwitch.isChecked = on
-            // §6-B2 三态：开 / 关 / 未生效（镜像为开但设备读为 0 或读不到）
+            // 四态：开 / 关 / 未生效(act=0) / 读不到(act=null)——读不到不再与真关混淆
             tvMasterState.text = when {
                 act == 1 -> getString(R.string.state_on)
+                act == null && prefs.masterOn -> getString(R.string.state_unavailable)
                 prefs.masterOn -> getString(R.string.state_inactive)
                 else -> getString(R.string.state_off)
             }
