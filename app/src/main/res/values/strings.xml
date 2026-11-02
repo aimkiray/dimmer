@@ -4,7 +4,7 @@
 
     <!-- 门界面 -->
     <string name="gate_title">需要一次 adb 授权</string>
-    <string name="gate_body">Dimmer 通过系统接口调暗屏幕，需要 WRITE_SECURE_SETTINGS 权限。该权限无法在手机上申请，需在电脑上执行一次 adb 命令。</string>
+    <string name="gate_body">Dimmer 通过系统设置接口调暗屏幕，需要 WRITE_SECURE_SETTINGS 权限。这个权限不能在手机上申请，需要在电脑上执行一次 adb 命令。</string>
     <string name="gate_alt_title">推荐：重装授权</string>
     <string name="gate_alt_badge">ColorOS 必选</string>
     <string name="gate_alt_body">-r 保留数据，-g 安装时直接授予权限。将 &lt;apk路径&gt; 替换为实际 APK 路径。</string>
@@ -17,59 +17,47 @@
     <string name="msg_copy_failed">复制失败，请长按命令文本手动复制</string>
 
     <!-- 主界面 -->
-    <string name="hero_title">屏幕调暗</string>
-    <string name="master_switch_desc">调暗总开关</string>
+    <string name="hero_title">颜色层</string>
+    <string name="master_switch_desc">颜色层开关</string>
     <string name="state_on">已开启</string>
     <string name="state_off">已关闭</string>
-    <string name="state_inactive">未生效 · 已被外部关闭</string>
-    <string name="state_unavailable">已开启 · 本机不支持状态回读</string>
+    <string name="state_inactive">未生效 · 点「重新写入」恢复</string>
+    <string name="state_unavailable">已开启 · 本机无法回读状态</string>
     <string name="level_label">强度</string>
-    <string name="level_suffix">/ 100</string>
-    <string name="slider_desc">调暗强度</string>
-    <string name="tick_start">0</string>
-    <string name="tick_mid">50 · 系统滑块上限</string>
-    <string name="tick_end">100</string>
+    <string name="slider_desc">颜色层强度</string>
+    <string name="panel_title">面板层</string>
+    <string name="panel_sub">硬件级降白点，与颜色层叠加</string>
+    <string name="panel_switch_desc">面板层开关</string>
     <string name="section_automation">自动化</string>
     <string name="persist_title">跨重启保持</string>
-    <string name="persist_sub">重启后由系统保留调暗设置</string>
-    <string name="boot_title">开机自恢复</string>
-    <string name="boot_sub">开机后自动重新写入一次</string>
+    <string name="persist_sub">重启后系统保留颜色层设置</string>
+    <string name="boot_title">开机恢复</string>
+    <string name="boot_sub">开机后自动重新写入颜色层</string>
     <string name="reapply_title">自动纠正</string>
-    <string name="reapply_sub">检测到被覆盖时静默恢复</string>
+    <string name="reapply_sub">被系统设置改动时自动恢复</string>
     <string name="diag_title">诊断与说明</string>
     <string name="diag_sub">状态回读、验证命令、使用说明</string>
     <string name="btn_reapply">重新写入</string>
 
-    <!-- 警示条 -->
-    <string name="banner_title">系统滑块正在介入</string>
-    <string name="banner_text">系统「降低白点值」滑块不在 0%，会把强度压回 50 以内。建议把它拖回 0%。</string>
-    <string name="banner_title_extoff">调暗已被外部关闭</string>
-    <string name="banner_text_extoff">不是系统滑块造成的。点「仍然应用」可重新写入。</string>
-    <string name="btn_go_settings">去设置</string>
-    <string name="btn_apply_anyway">仍然应用</string>
-    <string name="banner_close_desc">关闭警示</string>
-
     <!-- 诊断底部弹层 -->
-    <string name="sheet_system_status">系统状态</string>
-    <string name="diag_switch_label">调暗开关</string>
+    <string name="sheet_system_status">当前状态</string>
+    <string name="diag_switch_label">颜色层</string>
     <string name="diag_level_label">强度</string>
     <string name="diag_persist_label">跨重启保持</string>
-    <string name="diag_oplus_label">系统白点滑块</string>
+    <string name="diag_panel_label">面板层</string>
     <string name="value_on">开启</string>
     <string name="value_off">关闭</string>
     <string name="value_unknown">未知</string>
-    <string name="denied_local_str">读取被拒 · 本地：%1$s</string>
-    <string name="denied_local_int">读取被拒 · 本地：%1$d</string>
-    <string name="oplus_intervening">介入中（%1$s）</string>
-    <string name="oplus_none">未介入（0）</string>
-    <string name="sheet_denied_note">部分 ROM 拒绝应用读取系统设置，此时显示本地记录。</string>
-    <string name="sheet_verify_header">验证真实强度</string>
-    <string name="sheet_verify_body">应用无法直接读取实际强度（rbcStrength）。在电脑上执行以下命令验证，多设备时在 adb 后加 -s &lt;序列号&gt;。</string>
+    <string name="denied_local_str">无法读取 · 记录：%1$s</string>
+    <string name="denied_local_int">无法读取 · 记录：%1$d</string>
+    <string name="sheet_denied_note">部分系统不允许应用读取设置，此时显示本机记录。</string>
+    <string name="sheet_verify_header">验证颜色层强度</string>
+    <string name="sheet_verify_body">实际强度（rbcStrength）只能在电脑上查看，执行下面的命令即可。连接多台设备时，在 adb 后加 -s 和序列号。</string>
     <string name="sheet_usage_header">使用说明</string>
-    <string name="usage_1">• 把系统「降低白点值」滑块保持在 0%，由本应用控制调暗。</string>
-    <string name="usage_2">• 屏幕忽亮忽暗时，检查系统滑块是否被改动。</string>
-    <string name="usage_3">• 本应用只写 AOSP reduce_bright_colors_* 键，不改系统亮度，也不写系统白点值键（该键低于 0.5 反而更亮）。</string>
-    <string name="usage_4">• 覆盖监听只在应用运行时有效；进程结束后可用快捷设置磁贴、开机自恢复或「重新写入」兜底。</string>
+    <string name="usage_1">• 颜色层：Android 原生「降低亮色」，强度 0–100，可超过系统设置的上限 50。</string>
+    <string name="usage_2">• 面板层：即系统「降低白点值」开关，由屏幕硬件处理，和颜色层叠加。两层都开最暗。</string>
+    <string name="usage_3">• 不要拖动系统设置里的「降低白点值」滑块，它会把颜色层强度改回 50 以内；开启「自动纠正」可自动恢复。</string>
+    <string name="usage_4">• 不修改系统亮度。自动纠正只在应用运行时生效，其它时候可用快捷设置磁贴、开机恢复或「重新写入」。</string>
 
     <!-- 磁贴 -->
     <string name="tile_label_unauthorized">Dimmer·未授权</string>
@@ -80,7 +68,4 @@
     <string name="msg_applied">已应用</string>
     <string name="msg_perm_lost">授权失效，请重新执行 adb 授权命令</string>
     <string name="msg_write_failed">写入失败：%1$s</string>
-    <string name="msg_no_settings">无法打开系统设置</string>
-    <string name="msg_overridden">检测到系统「降低白点值」滑块覆盖，可点「仍然应用」恢复</string>
-    <string name="msg_ext_off">检测到调暗被外部关闭，可点「仍然应用」恢复</string>
 </resources>

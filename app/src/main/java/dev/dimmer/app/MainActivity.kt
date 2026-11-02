@@ -2,7 +2,6 @@ package dev.dimmer.app
 
 import android.content.ClipData
 import android.content.ClipboardManager
-import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.TextView
@@ -35,13 +34,6 @@ class MainActivity : AppCompatActivity(), OplusSliderGuard.Listener {
     private lateinit var btnCopyGrant: MaterialButton
     private lateinit var btnCopyGrantAlt: MaterialButton
     private lateinit var btnRecheck: MaterialButton
-    private lateinit var banner: MaterialCardView
-    private lateinit var tvBannerTitle: TextView
-    private lateinit var tvBannerText: TextView
-    private lateinit var btnGoSettings: MaterialButton
-    private lateinit var btnApplyAnyway: MaterialButton
-    private lateinit var btnCloseBanner: MaterialButton
-    private var bannerDismissed = false
     private lateinit var heroCard: MaterialCardView
     private lateinit var masterSwitch: MaterialSwitch
     private lateinit var tvMasterState: TextView
@@ -50,6 +42,7 @@ class MainActivity : AppCompatActivity(), OplusSliderGuard.Listener {
     private lateinit var switchPersist: MaterialSwitch
     private lateinit var switchBoot: MaterialSwitch
     private lateinit var switchReapply: MaterialSwitch
+    private lateinit var panelSwitch: MaterialSwitch
     private lateinit var btnReapply: MaterialButton
     private lateinit var rootView: View
 
@@ -58,7 +51,7 @@ class MainActivity : AppCompatActivity(), OplusSliderGuard.Listener {
     private var sheetActivated: TextView? = null
     private var sheetLevel: TextView? = null
     private var sheetPersist: TextView? = null
-    private var sheetOplus: TextView? = null
+    private var sheetPanel: TextView? = null
     private var lastRead: Triple<Int?, Int?, Int?> = Triple(null, null, null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -110,16 +103,6 @@ class MainActivity : AppCompatActivity(), OplusSliderGuard.Listener {
         btnCopyGrant = findViewById(R.id.btnCopyGrant)
         btnCopyGrantAlt = findViewById(R.id.btnCopyGrantAlt)
         btnRecheck = findViewById(R.id.btnRecheck)
-        banner = findViewById(R.id.coexistBanner)
-        tvBannerTitle = findViewById(R.id.tvBannerTitle)
-        tvBannerText = findViewById(R.id.tvBannerText)
-        btnGoSettings = findViewById(R.id.btnGoSettings)
-        btnApplyAnyway = findViewById(R.id.btnApplyAnyway)
-        btnCloseBanner = findViewById(R.id.btnCloseBanner)
-        btnCloseBanner.setOnClickListener {
-            bannerDismissed = true
-            banner.visibility = View.GONE
-        }
         heroCard = findViewById(R.id.heroCard)
         masterSwitch = findViewById(R.id.masterSwitch)
         tvMasterState = findViewById(R.id.tvMasterState)
@@ -132,6 +115,8 @@ class MainActivity : AppCompatActivity(), OplusSliderGuard.Listener {
         findViewById<View>(R.id.rowPersist).setOnClickListener { switchPersist.toggle() }
         findViewById<View>(R.id.rowBoot).setOnClickListener { switchBoot.toggle() }
         findViewById<View>(R.id.rowReapply).setOnClickListener { switchReapply.toggle() }
+        panelSwitch = findViewById(R.id.panelSwitch)
+        findViewById<View>(R.id.rowPanel).setOnClickListener { panelSwitch.toggle() }
         findViewById<View>(R.id.rowAdvanced).setOnClickListener { openAdvancedSheet() }
         btnReapply = findViewById(R.id.btnReapply)
     }
@@ -163,18 +148,6 @@ class MainActivity : AppCompatActivity(), OplusSliderGuard.Listener {
     // ---------- 态 B：主界面 ----------
 
     private fun wireMain() {
-        btnGoSettings.setOnClickListener {
-            try {
-                startActivity(Intent("android.settings.ACCESSIBILITY_SETTINGS"))
-            } catch (t: Throwable) {
-                try {
-                    startActivity(Intent(android.provider.Settings.ACTION_SETTINGS))
-                } catch (t2: Throwable) {
-                    snack(getString(R.string.msg_no_settings))
-                }
-            }
-        }
-        btnApplyAnyway.setOnClickListener { reapply() }
         btnReapply.setOnClickListener { reapply() }
 
         masterSwitch.setOnCheckedChangeListener { _, isChecked ->
@@ -229,7 +202,15 @@ class MainActivity : AppCompatActivity(), OplusSliderGuard.Listener {
             if (suppress) return@setOnCheckedChangeListener
             prefs.autoReapply = isChecked
             snack(getString(R.string.msg_applied))
-            if (isChecked) updateBanner()
+        }
+
+        panelSwitch.setOnCheckedChangeListener { _, isChecked ->
+            if (suppress) return@setOnCheckedChangeListener
+            if (!requirePermissionOrGate()) {
+                setSwitchChecked(panelSwitch, !isChecked)
+                return@setOnCheckedChangeListener
+            }
+            handleResult(controller.setPanelDim(isChecked), okFeedback = true) { populateMain() }
         }
     }
 
@@ -262,11 +243,11 @@ class MainActivity : AppCompatActivity(), OplusSliderGuard.Listener {
             switchPersist.isChecked = (per ?: if (prefs.persistOn) 1 else 0) == 1
             switchBoot.isChecked = prefs.autoRestoreOnBoot
             switchReapply.isChecked = prefs.autoReapply
+            panelSwitch.isChecked = controller.readPanelDim() == 1
         } finally {
             suppress = false
         }
         refreshReadback(act, lvl, per)
-        updateBanner()
     }
 
     /** 主控卡配色：容器恒定 surfaceContainerHigh，开/关由大数字与状态行着色区分。 */
@@ -288,7 +269,7 @@ class MainActivity : AppCompatActivity(), OplusSliderGuard.Listener {
         val tvAct = sheetActivated ?: return
         val tvLvl = sheetLevel ?: return
         val tvPer = sheetPersist ?: return
-        val tvOpl = sheetOplus ?: return
+        val tvPan = sheetPanel ?: return
         tvAct.text = when (act) {
             1 -> getString(R.string.value_on)
             0 -> getString(R.string.value_off)
@@ -310,11 +291,10 @@ class MainActivity : AppCompatActivity(), OplusSliderGuard.Listener {
                 getString(if (prefs.persistOn) R.string.value_on else R.string.value_off)
             )
         }
-        val leval = controller.readOplusLeval()
-        tvOpl.text = when {
-            leval == null -> getString(R.string.value_unknown)
-            leval > 0f -> getString(R.string.oplus_intervening, leval.toString())
-            else -> getString(R.string.oplus_none)
+        tvPan.text = when (controller.readPanelDim()) {
+            1 -> getString(R.string.value_on)
+            0 -> getString(R.string.value_off)
+            else -> getString(R.string.value_unknown)
         }
     }
 
@@ -333,7 +313,7 @@ class MainActivity : AppCompatActivity(), OplusSliderGuard.Listener {
         sheetActivated = content.findViewById(R.id.tvReadActivated)
         sheetLevel = content.findViewById(R.id.tvReadLevel)
         sheetPersist = content.findViewById(R.id.tvReadPersist)
-        sheetOplus = content.findViewById(R.id.tvReadOplus)
+        sheetPanel = content.findViewById(R.id.tvReadPanel)
         content.findViewById<TextView>(R.id.tvVerifyCmd).text = SecureSettingsGate.VERIFY_COMMAND
         content.findViewById<View>(R.id.btnCopyVerify)
             .setOnClickListener { copyToClipboard(SecureSettingsGate.VERIFY_COMMAND) }
@@ -341,7 +321,7 @@ class MainActivity : AppCompatActivity(), OplusSliderGuard.Listener {
             sheetActivated = null
             sheetLevel = null
             sheetPersist = null
-            sheetOplus = null
+            sheetPanel = null
             sheetDialog = null
         }
         sheetDialog = dialog
@@ -349,47 +329,9 @@ class MainActivity : AppCompatActivity(), OplusSliderGuard.Listener {
         dialog.show()
     }
 
-    /**
-     * C-2：警示条条件显示。两种触发源文案/按钮各自自洽——
-     * 滑块介入（leval>0）：原文案 + 「去设置」「仍然应用」；
-     * 仅外部关闭（activated=0 且无滑块介入）：不误归因滑块、隐藏设置入口。
-     */
-    private fun updateBanner() {
-        val intervening = controller.isOplusIntervening()
-        val extOff = !intervening && prefs.masterOn && controller.readActivated() == 0
-        when {
-            intervening && !bannerDismissed -> {
-                tvBannerTitle.setText(R.string.banner_title)
-                tvBannerText.setText(R.string.banner_text)
-                btnGoSettings.visibility = View.VISIBLE
-                banner.visibility = View.VISIBLE
-            }
-            extOff && !bannerDismissed -> {
-                tvBannerTitle.setText(R.string.banner_title_extoff)
-                tvBannerText.setText(R.string.banner_text_extoff)
-                btnGoSettings.visibility = View.GONE
-                banner.visibility = View.VISIBLE
-            }
-            else -> {
-                banner.visibility = View.GONE
-                // 条件消失即解除本次关闭，下一次介入/外部关闭重新弹出
-                if (!intervening && !extOff) bannerDismissed = false
-            }
-        }
-    }
-
-    override fun onExternalOverrideEvent() {
-        // 回调已由 guard 投递到主线程：整体重填充，同步开关/三态/回读行/警示条
+    override fun onExternalChange() {
+        // 回调已由 guard 投递到主线程：整体重填充即可
         populateMain()
-        if (!prefs.oplusWarned) {
-            snack(
-                getString(
-                    if (controller.isOplusIntervening()) R.string.msg_overridden
-                    else R.string.msg_ext_off
-                )
-            )
-            prefs.oplusWarned = true
-        }
     }
 
     /** FR-11 一键重新应用：无视当前状态重写 level+activated。 */

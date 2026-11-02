@@ -120,12 +120,12 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="@string/diag_oplus_label"
+                android:text="@string/diag_panel_label"
                 android:textAppearance="?attr/textAppearanceBodyLarge"
                 android:textColor="?attr/colorOnSurface" />
 
             <TextView
-                android:id="@+id/tvReadOplus"
+                android:id="@+id/tvReadPanel"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="16dp"

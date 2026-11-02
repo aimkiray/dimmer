@@ -63,15 +63,6 @@ class Prefs(context: Context) {
         }
         set(v) = sp.edit().putBoolean(KEY_AUTO_REAPPLY, v).apply()
 
-    /** 一次性提示标记：本次介入/外部关闭事件是否已提示过（介入解除时复位）。 */
-    var oplusWarned: Boolean
-        get() = try {
-            sp.getBoolean(KEY_OPLUS_WARNED, false)
-        } catch (t: Throwable) {
-            false
-        }
-        set(v) = sp.edit().putBoolean(KEY_OPLUS_WARNED, v).apply()
-
     companion object {
         const val DEFAULT_LEVEL = 100
         private const val KEY_LAST_LEVEL = "last_level"
@@ -80,6 +71,5 @@ class Prefs(context: Context) {
         private const val KEY_PERSIST_ON = "persist_on"
         private const val KEY_AUTO_RESTORE = "auto_restore_on_boot"
         private const val KEY_AUTO_REAPPLY = "auto_reapply"
-        private const val KEY_OPLUS_WARNED = "oplus_warned"
     }
 }
