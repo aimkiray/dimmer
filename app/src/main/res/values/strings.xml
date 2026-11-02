@@ -4,44 +4,72 @@
 
     <!-- 门界面 -->
     <string name="gate_title">需要一次 adb 授权</string>
-    <string name="gate_status">Dimmer 通过系统隐藏接口调暗屏幕，必须持有 WRITE_SECURE_SETTINGS 权限。该权限无法弹窗申请，只能在电脑上执行一次 adb 命令授予（授权后无需重启本 App）。若电脑连接了多台设备，命令前请加 -s &lt;序列号&gt; 指定目标设备。</string>
-    <string name="gate_prereq">前提：电脑已安装 platform-tools、手机已开启 USB 调试并完成授权。若 pm grant 被系统拒绝（如 ColorOS 报 SecurityException），改用上方备选命令 adb install -r -g &lt;apk路径&gt; 重装授权（重装授权、数据保留）。撤销方式：adb shell pm revoke dev.dimmer.app android.permission.WRITE_SECURE_SETTINGS</string>
-    <string name="gate_alt_text">推荐方式（ColorOS 等拒绝 pm grant 的 ROM 必选此项）：在电脑上执行下方命令重装本 App——-r 重装保留应用数据，-g 在安装时直接授予清单内权限（含 WRITE_SECURE_SETTINGS），效果等同 pm grant。命令中 &lt;apk路径&gt; 为占位符，请替换为本机实际构建出的 app-debug.apk 绝对路径。若电脑连接了多台设备，adb 后请加 -s &lt;序列号&gt; 指定目标设备。</string>
-    <string name="gate_primary_text">标准方式（其它 ROM 可尝试，ColorOS 上该命令通常被拒绝）：</string>
-    <string name="btn_copy_grant">复制授权命令</string>
-    <string name="btn_copy_grant_alt">复制备选授权命令</string>
+    <string name="gate_body">Dimmer 通过系统接口调暗屏幕，需要 WRITE_SECURE_SETTINGS 权限。该权限无法在手机上申请，需在电脑上执行一次 adb 命令。</string>
+    <string name="gate_alt_title">推荐：重装授权</string>
+    <string name="gate_alt_badge">ColorOS 必选</string>
+    <string name="gate_alt_body">-r 保留数据，-g 安装时直接授予权限。将 &lt;apk路径&gt; 替换为实际 APK 路径。</string>
+    <string name="gate_std_title">标准方式</string>
+    <string name="gate_std_body">其它 ROM 可尝试；ColorOS 通常会拒绝。</string>
+    <string name="gate_footnote">前提：电脑已安装 platform-tools，手机已开启 USB 调试。多设备时在 adb 后加 -s &lt;序列号&gt;。撤销：adb shell pm revoke dev.dimmer.app android.permission.WRITE_SECURE_SETTINGS</string>
     <string name="btn_recheck">我已授权，重新检测</string>
+    <string name="copy_command">复制命令</string>
     <string name="msg_copied">已复制</string>
     <string name="msg_copy_failed">复制失败，请长按命令文本手动复制</string>
 
     <!-- 主界面 -->
-    <string name="banner_text">检测到系统「降低白点值」滑块正在介入（oplus leval&gt;0）。两条路径会争用：系统滑块会把强度覆盖回 ≤50（rbcStrength 上限），建议使用本 App 时把系统滑块拖回 0%。</string>
-    <string name="banner_text_extoff">检测到本 App 的调暗被外部关闭（activated=0，非系统滑块介入）。如需恢复，可点「仍然应用」重新写入。</string>
-    <string name="btn_go_settings">去系统设置</string>
-    <string name="btn_apply_anyway">仍然应用</string>
-    <string name="banner_close">✕</string>
-    <string name="banner_close_desc">关闭警示</string>
-    <string name="master_label">调暗总开关</string>
-    <string name="state_on">当前：开</string>
-    <string name="state_off">当前：关</string>
-    <string name="state_inactive">当前：未生效（被外部关闭）</string>
-    <string name="state_unavailable">当前：读不到（设备拒绝读取，以回读区为准）</string>
-    <string name="slider_label">调暗强度（level 0–100）</string>
-    <string name="slider_ticks">0　　　　50=系统滑块上限　　　　100</string>
-    <string name="persist_label">跨重启持久化（本机读不到时按本地镜像显示，以回读区为准）</string>
-    <string name="boot_label">开机自恢复（重启后自动重应用）</string>
-    <string name="reapply_label">自动重应用（检测到覆盖时静默恢复）</string>
-    <string name="readback_title">状态回读</string>
-    <string name="readback_activated">activated：</string>
-    <string name="readback_level">level：</string>
-    <string name="readback_persist">persist：</string>
-    <string name="readback_oplus">oplus leval：</string>
-    <string name="readback_unknown">未知</string>
-    <string name="readback_local">未知（本地：%1$d）</string>
-    <string name="btn_copy_verify">复制验证命令</string>
-    <string name="verify_hint">实际强度（rbcStrength）App 无法直接读取；在电脑执行复制的命令可验证真实强度，多设备请加 -s &lt;序列号&gt;。</string>
+    <string name="hero_title">屏幕调暗</string>
+    <string name="master_switch_desc">调暗总开关</string>
+    <string name="state_on">已开启</string>
+    <string name="state_off">已关闭</string>
+    <string name="state_inactive">未生效 · 已被外部关闭</string>
+    <string name="state_unavailable">已开启 · 本机不支持状态回读</string>
+    <string name="level_label">强度</string>
+    <string name="level_suffix">/ 100</string>
+    <string name="slider_desc">调暗强度</string>
+    <string name="tick_start">0</string>
+    <string name="tick_mid">50 · 系统滑块上限</string>
+    <string name="tick_end">100</string>
+    <string name="section_automation">自动化</string>
+    <string name="persist_title">跨重启保持</string>
+    <string name="persist_sub">重启后由系统保留调暗设置</string>
+    <string name="boot_title">开机自恢复</string>
+    <string name="boot_sub">开机后自动重新写入一次</string>
+    <string name="reapply_title">自动纠正</string>
+    <string name="reapply_sub">检测到被覆盖时静默恢复</string>
+    <string name="diag_title">诊断与说明</string>
+    <string name="diag_sub">状态回读、验证命令、使用说明</string>
     <string name="btn_reapply">重新写入</string>
-    <string name="info_text">说明：①系统「降低白点值」滑块保持 0% 时体验最佳；②用本 App 控制调暗；③若屏幕忽亮忽暗，请检查系统滑块是否被改动。本工具只写 AOSP 的 reduce_bright_colors_* 键，永不写系统白点值键、不改系统亮度条——该键仅 0.5 一档实际生效，写入更小数值反而更亮，故本工具永不写它。覆盖监听仅在 App 进程存活期有效；进程结束后可靠磁贴点按、开机自恢复或手动「重新应用」兜底。调暗效果取决于厂商 ROM 实现，可用上方验证命令确认。</string>
+
+    <!-- 警示条 -->
+    <string name="banner_title">系统滑块正在介入</string>
+    <string name="banner_text">系统「降低白点值」滑块不在 0%，会把强度压回 50 以内。建议把它拖回 0%。</string>
+    <string name="banner_title_extoff">调暗已被外部关闭</string>
+    <string name="banner_text_extoff">不是系统滑块造成的。点「仍然应用」可重新写入。</string>
+    <string name="btn_go_settings">去设置</string>
+    <string name="btn_apply_anyway">仍然应用</string>
+    <string name="banner_close_desc">关闭警示</string>
+
+    <!-- 诊断底部弹层 -->
+    <string name="sheet_system_status">系统状态</string>
+    <string name="diag_switch_label">调暗开关</string>
+    <string name="diag_level_label">强度</string>
+    <string name="diag_persist_label">跨重启保持</string>
+    <string name="diag_oplus_label">系统白点滑块</string>
+    <string name="value_on">开启</string>
+    <string name="value_off">关闭</string>
+    <string name="value_unknown">未知</string>
+    <string name="denied_local_str">读取被拒 · 本地：%1$s</string>
+    <string name="denied_local_int">读取被拒 · 本地：%1$d</string>
+    <string name="oplus_intervening">介入中（%1$s）</string>
+    <string name="oplus_none">未介入（0）</string>
+    <string name="sheet_denied_note">部分 ROM 拒绝应用读取系统设置，此时显示本地记录。</string>
+    <string name="sheet_verify_header">验证真实强度</string>
+    <string name="sheet_verify_body">应用无法直接读取实际强度（rbcStrength）。在电脑上执行以下命令验证，多设备时在 adb 后加 -s &lt;序列号&gt;。</string>
+    <string name="sheet_usage_header">使用说明</string>
+    <string name="usage_1">• 把系统「降低白点值」滑块保持在 0%，由本应用控制调暗。</string>
+    <string name="usage_2">• 屏幕忽亮忽暗时，检查系统滑块是否被改动。</string>
+    <string name="usage_3">• 本应用只写 AOSP reduce_bright_colors_* 键，不改系统亮度，也不写系统白点值键（该键低于 0.5 反而更亮）。</string>
+    <string name="usage_4">• 覆盖监听只在应用运行时有效；进程结束后可用快捷设置磁贴、开机自恢复或「重新写入」兜底。</string>
 
     <!-- 磁贴 -->
     <string name="tile_label_unauthorized">Dimmer·未授权</string>

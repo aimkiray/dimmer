@@ -5,13 +5,20 @@ import android.content.ClipboardManager
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
-import android.widget.Button
-import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updatePadding
+import androidx.core.widget.NestedScrollView
+import com.google.android.material.bottomsheet.BottomSheetDialog
+import com.google.android.material.button.MaterialButton
+import com.google.android.material.card.MaterialCardView
+import com.google.android.material.color.MaterialColors
+import com.google.android.material.materialswitch.MaterialSwitch
 import com.google.android.material.slider.Slider
 import com.google.android.material.snackbar.Snackbar
-import com.google.android.material.materialswitch.MaterialSwitch
+import com.google.android.material.R as MR
 
 /** 唯一 Activity：权限门（态 A）+ 主控界面（态 B）。onResume 重新检测权限并回读状态。 */
 class MainActivity : AppCompatActivity(), OplusSliderGuard.Listener {
@@ -21,19 +28,21 @@ class MainActivity : AppCompatActivity(), OplusSliderGuard.Listener {
 
     private var suppress = false
 
-    private lateinit var gateGroup: android.widget.ScrollView
-    private lateinit var mainGroup: LinearLayout
+    private lateinit var gateScroll: NestedScrollView
+    private lateinit var mainGroup: NestedScrollView
     private lateinit var tvGrantCmd: TextView
     private lateinit var tvGrantCmdAlt: TextView
-    private lateinit var btnCopyGrant: Button
-    private lateinit var btnCopyGrantAlt: Button
-    private lateinit var btnRecheck: Button
-    private lateinit var banner: com.google.android.material.card.MaterialCardView
+    private lateinit var btnCopyGrant: MaterialButton
+    private lateinit var btnCopyGrantAlt: MaterialButton
+    private lateinit var btnRecheck: MaterialButton
+    private lateinit var banner: MaterialCardView
+    private lateinit var tvBannerTitle: TextView
     private lateinit var tvBannerText: TextView
-    private lateinit var btnGoSettings: Button
-    private lateinit var btnApplyAnyway: Button
-    private lateinit var btnCloseBanner: TextView
+    private lateinit var btnGoSettings: MaterialButton
+    private lateinit var btnApplyAnyway: MaterialButton
+    private lateinit var btnCloseBanner: MaterialButton
     private var bannerDismissed = false
+    private lateinit var heroCard: MaterialCardView
     private lateinit var masterSwitch: MaterialSwitch
     private lateinit var tvMasterState: TextView
     private lateinit var levelSlider: Slider
@@ -41,13 +50,16 @@ class MainActivity : AppCompatActivity(), OplusSliderGuard.Listener {
     private lateinit var switchPersist: MaterialSwitch
     private lateinit var switchBoot: MaterialSwitch
     private lateinit var switchReapply: MaterialSwitch
-    private lateinit var tvReadActivated: TextView
-    private lateinit var tvReadLevel: TextView
-    private lateinit var tvReadPersist: TextView
-    private lateinit var tvReadOplus: TextView
-    private lateinit var btnCopyVerify: Button
-    private lateinit var btnReapply: Button
+    private lateinit var btnReapply: MaterialButton
     private lateinit var rootView: View
+
+    // 诊断弹层引用：仅弹层展示期间非空，populateMain 顺带刷新
+    private var sheetDialog: BottomSheetDialog? = null
+    private var sheetActivated: TextView? = null
+    private var sheetLevel: TextView? = null
+    private var sheetPersist: TextView? = null
+    private var sheetOplus: TextView? = null
+    private var lastRead: Triple<Int?, Int?, Int?> = Triple(null, null, null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -74,14 +86,32 @@ class MainActivity : AppCompatActivity(), OplusSliderGuard.Listener {
 
     private fun bindViews() {
         rootView = findViewById(R.id.root)
-        gateGroup = findViewById(R.id.gateScroll)
+        gateScroll = findViewById(R.id.gateScroll)
         mainGroup = findViewById(R.id.mainGroup)
+        // 手势导航栏兜底：底部 inset 转为滚动内容内边距（ScrollView 自身 padding
+        // 对未填满视口的内容不生效），保证末项与手势区之间留出间隙
+        val minGap = (16 * resources.displayMetrics.density).toInt()
+        listOf(gateScroll, mainGroup).forEach { sv ->
+            val content = sv.getChildAt(0)
+            val base = content.paddingBottom
+            ViewCompat.setOnApplyWindowInsetsListener(sv) { v, insets ->
+                val bottom = maxOf(
+                    insets.getInsets(WindowInsetsCompat.Type.systemBars()).bottom,
+                    insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom,
+                    insets.getInsets(WindowInsetsCompat.Type.mandatorySystemGestures()).bottom,
+                    minGap
+                )
+                content.updatePadding(bottom = base + bottom)
+                insets
+            }
+        }
         tvGrantCmd = findViewById(R.id.tvGrantCmd)
         tvGrantCmdAlt = findViewById(R.id.tvGrantCmdAlt)
         btnCopyGrant = findViewById(R.id.btnCopyGrant)
         btnCopyGrantAlt = findViewById(R.id.btnCopyGrantAlt)
         btnRecheck = findViewById(R.id.btnRecheck)
         banner = findViewById(R.id.coexistBanner)
+        tvBannerTitle = findViewById(R.id.tvBannerTitle)
         tvBannerText = findViewById(R.id.tvBannerText)
         btnGoSettings = findViewById(R.id.btnGoSettings)
         btnApplyAnyway = findViewById(R.id.btnApplyAnyway)
@@ -90,18 +120,19 @@ class MainActivity : AppCompatActivity(), OplusSliderGuard.Listener {
             bannerDismissed = true
             banner.visibility = View.GONE
         }
+        heroCard = findViewById(R.id.heroCard)
         masterSwitch = findViewById(R.id.masterSwitch)
         tvMasterState = findViewById(R.id.tvMasterState)
         levelSlider = findViewById(R.id.levelSlider)
         tvLevelValue = findViewById(R.id.tvLevelValue)
+        findViewById<View>(R.id.heroHeader).setOnClickListener { masterSwitch.toggle() }
         switchPersist = findViewById(R.id.switchPersist)
         switchBoot = findViewById(R.id.switchBoot)
         switchReapply = findViewById(R.id.switchReapply)
-        tvReadActivated = findViewById(R.id.tvReadActivated)
-        tvReadLevel = findViewById(R.id.tvReadLevel)
-        tvReadPersist = findViewById(R.id.tvReadPersist)
-        tvReadOplus = findViewById(R.id.tvReadOplus)
-        btnCopyVerify = findViewById(R.id.btnCopyVerify)
+        findViewById<View>(R.id.rowPersist).setOnClickListener { switchPersist.toggle() }
+        findViewById<View>(R.id.rowBoot).setOnClickListener { switchBoot.toggle() }
+        findViewById<View>(R.id.rowReapply).setOnClickListener { switchReapply.toggle() }
+        findViewById<View>(R.id.rowAdvanced).setOnClickListener { openAdvancedSheet() }
         btnReapply = findViewById(R.id.btnReapply)
     }
 
@@ -125,7 +156,7 @@ class MainActivity : AppCompatActivity(), OplusSliderGuard.Listener {
     }
 
     private fun showGate() {
-        gateGroup.visibility = View.VISIBLE
+        gateScroll.visibility = View.VISIBLE
         mainGroup.visibility = View.GONE
     }
 
@@ -145,7 +176,6 @@ class MainActivity : AppCompatActivity(), OplusSliderGuard.Listener {
         }
         btnApplyAnyway.setOnClickListener { reapply() }
         btnReapply.setOnClickListener { reapply() }
-        btnCopyVerify.setOnClickListener { copyToClipboard(SecureSettingsGate.VERIFY_COMMAND) }
 
         masterSwitch.setOnCheckedChangeListener { _, isChecked ->
             if (suppress) return@setOnCheckedChangeListener
@@ -204,13 +234,14 @@ class MainActivity : AppCompatActivity(), OplusSliderGuard.Listener {
     }
 
     private fun showMain() {
-        gateGroup.visibility = View.GONE
+        gateScroll.visibility = View.GONE
         mainGroup.visibility = View.VISIBLE
         populateMain()
     }
 
     private fun populateMain() {
         val (act, lvl, per) = controller.readBack()
+        lastRead = Triple(act, lvl, per)
         suppress = true
         try {
             // 有效镜像 = 用户意图 ∧ 上次应用结果：应用失败时镜像不再伪报"开"
@@ -224,6 +255,7 @@ class MainActivity : AppCompatActivity(), OplusSliderGuard.Listener {
                 prefs.masterOn -> getString(R.string.state_inactive)
                 else -> getString(R.string.state_off)
             }
+            updateHeroColors(on)
             val level = RbcController.clampLevel(lvl ?: prefs.lastLevel)
             levelSlider.value = level.toFloat()
             tvLevelValue.text = level.toString()
@@ -237,21 +269,89 @@ class MainActivity : AppCompatActivity(), OplusSliderGuard.Listener {
         updateBanner()
     }
 
-    /** FR-5 状态回读区：读不到显示"未知"并回退本地镜像（标注"本地"）。 */
+    /** 主控卡配色：容器恒定 surfaceContainerHigh，开/关由大数字与状态行着色区分。 */
+    private fun updateHeroColors(on: Boolean) {
+        heroCard.setCardBackgroundColor(
+            MaterialColors.getColor(heroCard, MR.attr.colorSurfaceContainerHigh)
+        )
+        val accent = MaterialColors.getColor(
+            heroCard,
+            if (on) androidx.appcompat.R.attr.colorPrimary
+            else MR.attr.colorOnSurfaceVariant
+        )
+        tvLevelValue.setTextColor(accent)
+        tvMasterState.setTextColor(accent)
+    }
+
+    /** FR-5 状态回读：读不到时回退本地镜像并标注；仅弹层展示期间刷新。 */
     private fun refreshReadback(act: Int?, lvl: Int?, per: Int?) {
-        tvReadActivated.text = act?.toString()
-            ?: getString(R.string.readback_local, if (prefs.masterOn && prefs.lastApplyOk) 1 else 0)
-        tvReadLevel.text = lvl?.toString()
-            ?: getString(R.string.readback_local, prefs.lastLevel)
-        tvReadPersist.text = per?.toString()
-            ?: getString(R.string.readback_local, if (prefs.persistOn) 1 else 0)
-        tvReadOplus.text = controller.readOplusLeval()?.toString()
-            ?: getString(R.string.readback_unknown)
+        val tvAct = sheetActivated ?: return
+        val tvLvl = sheetLevel ?: return
+        val tvPer = sheetPersist ?: return
+        val tvOpl = sheetOplus ?: return
+        tvAct.text = when (act) {
+            1 -> getString(R.string.value_on)
+            0 -> getString(R.string.value_off)
+            else -> getString(
+                R.string.denied_local_str,
+                getString(
+                    if (prefs.masterOn && prefs.lastApplyOk) R.string.value_on
+                    else R.string.value_off
+                )
+            )
+        }
+        tvLvl.text = lvl?.toString()
+            ?: getString(R.string.denied_local_int, prefs.lastLevel)
+        tvPer.text = when (per) {
+            1 -> getString(R.string.value_on)
+            0 -> getString(R.string.value_off)
+            else -> getString(
+                R.string.denied_local_str,
+                getString(if (prefs.persistOn) R.string.value_on else R.string.value_off)
+            )
+        }
+        val leval = controller.readOplusLeval()
+        tvOpl.text = when {
+            leval == null -> getString(R.string.value_unknown)
+            leval > 0f -> getString(R.string.oplus_intervening, leval.toString())
+            else -> getString(R.string.oplus_none)
+        }
+    }
+
+    /** 诊断底部弹层：视图引用挂到可空字段，dismiss 时置空。 */
+    private fun openAdvancedSheet() {
+        val dialog = BottomSheetDialog(this)
+        val content = layoutInflater.inflate(R.layout.sheet_advanced, null)
+        dialog.setContentView(content)
+        val scroll = content.findViewById<NestedScrollView>(R.id.sheetScroll)
+        val base = scroll.paddingBottom
+        ViewCompat.setOnApplyWindowInsetsListener(scroll) { v, insets ->
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            v.updatePadding(bottom = base + bars.bottom)
+            insets
+        }
+        sheetActivated = content.findViewById(R.id.tvReadActivated)
+        sheetLevel = content.findViewById(R.id.tvReadLevel)
+        sheetPersist = content.findViewById(R.id.tvReadPersist)
+        sheetOplus = content.findViewById(R.id.tvReadOplus)
+        content.findViewById<TextView>(R.id.tvVerifyCmd).text = SecureSettingsGate.VERIFY_COMMAND
+        content.findViewById<View>(R.id.btnCopyVerify)
+            .setOnClickListener { copyToClipboard(SecureSettingsGate.VERIFY_COMMAND) }
+        dialog.setOnDismissListener {
+            sheetActivated = null
+            sheetLevel = null
+            sheetPersist = null
+            sheetOplus = null
+            sheetDialog = null
+        }
+        sheetDialog = dialog
+        refreshReadback(lastRead.first, lastRead.second, lastRead.third)
+        dialog.show()
     }
 
     /**
      * C-2：警示条条件显示。两种触发源文案/按钮各自自洽——
-     * 滑块介入（leval>0）：原文案 + 「去系统设置」「仍然应用」；
+     * 滑块介入（leval>0）：原文案 + 「去设置」「仍然应用」；
      * 仅外部关闭（activated=0 且无滑块介入）：不误归因滑块、隐藏设置入口。
      */
     private fun updateBanner() {
@@ -259,12 +359,14 @@ class MainActivity : AppCompatActivity(), OplusSliderGuard.Listener {
         val extOff = !intervening && prefs.masterOn && controller.readActivated() == 0
         when {
             intervening && !bannerDismissed -> {
-                tvBannerText.text = getString(R.string.banner_text)
+                tvBannerTitle.setText(R.string.banner_title)
+                tvBannerText.setText(R.string.banner_text)
                 btnGoSettings.visibility = View.VISIBLE
                 banner.visibility = View.VISIBLE
             }
             extOff && !bannerDismissed -> {
-                tvBannerText.text = getString(R.string.banner_text_extoff)
+                tvBannerTitle.setText(R.string.banner_title_extoff)
+                tvBannerText.setText(R.string.banner_text_extoff)
                 btnGoSettings.visibility = View.GONE
                 banner.visibility = View.VISIBLE
             }
@@ -353,6 +455,8 @@ class MainActivity : AppCompatActivity(), OplusSliderGuard.Listener {
     }
 
     private fun snack(msg: String) {
-        Snackbar.make(rootView, msg, Snackbar.LENGTH_SHORT).show()
+        Snackbar.make(rootView, msg, Snackbar.LENGTH_SHORT)
+            .setAnchorView(if (mainGroup.visibility == View.VISIBLE) btnReapply else null)
+            .show()
     }
 }

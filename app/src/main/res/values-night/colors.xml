@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <!-- 深色模式变体：警示条改暗金底+浅字，命令框改深色面 -->
-    <color name="banner_yellow">#3D3320</color>
-    <color name="banner_text">#F0DCB0</color>
-    <color name="cmd_bg">#2B2B2B</color>
-</resources>

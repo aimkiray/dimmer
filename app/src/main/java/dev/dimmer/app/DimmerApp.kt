@@ -1,6 +1,7 @@
 package dev.dimmer.app
 
 import android.app.Application
+import com.google.android.material.color.DynamicColors
 
 class DimmerApp : Application() {
 
@@ -10,6 +11,7 @@ class DimmerApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        DynamicColors.applyToActivitiesIfAvailable(this)
         val prefs = Prefs(this)
         val controller = RbcController(this, prefs)
         guard = OplusSliderGuard(this, controller, prefs)
