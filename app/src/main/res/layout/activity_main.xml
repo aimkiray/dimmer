@@ -1,0 +1,306 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <!-- ============ 态 A：门界面 ============ -->
+        <LinearLayout
+            android:id="@+id/gateGroup"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="@string/gate_title"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="@string/gate_status" />
+
+            <TextView
+                android:id="@+id/tvGrantCmd"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:background="@color/cmd_bg"
+                android:padding="10dp"
+                android:textIsSelectable="true"
+                android:typeface="monospace" />
+
+            <Button
+                android:id="@+id/btnCopyGrant"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="@string/btn_copy_grant" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="@string/gate_alt_text"
+                android:textSize="13sp" />
+
+            <TextView
+                android:id="@+id/tvGrantCmdAlt"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@color/cmd_bg"
+                android:padding="10dp"
+                android:textIsSelectable="true"
+                android:typeface="monospace" />
+
+            <Button
+                android:id="@+id/btnCopyGrantAlt"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="@string/btn_copy_grant_alt" />
+
+            <Button
+                android:id="@+id/btnRecheck"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/btn_recheck" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="@string/gate_prereq"
+                android:textSize="13sp" />
+        </LinearLayout>
+
+        <!-- ============ 态 B：主界面 ============ -->
+        <LinearLayout
+            android:id="@+id/mainGroup"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <!-- 1. 共存警示条（条件显示） -->
+            <LinearLayout
+                android:id="@+id/coexistBanner"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@color/banner_yellow"
+                android:padding="12dp"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/tvBannerText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/banner_text"
+                    android:textColor="@color/banner_text" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginTop="8dp">
+
+                    <Button
+                        android:id="@+id/btnGoSettings"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="8dp"
+                        android:text="@string/btn_go_settings" />
+
+                    <Button
+                        android:id="@+id/btnApplyAnyway"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:text="@string/btn_apply_anyway" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- 2. 总开关 -->
+            <com.google.android.material.materialswitch.MaterialSwitch
+                android:id="@+id/masterSwitch"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="@string/master_label"
+                android:textSize="17sp" />
+
+            <TextView
+                android:id="@+id/tvMasterState"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/state_off" />
+
+            <!-- 3. 强度滑杆 -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="@string/slider_label"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvLevelValue"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="28sp"
+                android:textStyle="bold"
+                android:gravity="center" />
+
+            <com.google.android.material.slider.Slider
+                android:id="@+id/levelSlider"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:valueFrom="0"
+                android:valueTo="100"
+                android:stepSize="1"
+                android:value="100" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="@string/slider_ticks"
+                android:textSize="12sp" />
+
+            <!-- 4. 开关行 ×3 -->
+            <com.google.android.material.materialswitch.MaterialSwitch
+                android:id="@+id/switchPersist"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="@string/persist_label" />
+
+            <com.google.android.material.materialswitch.MaterialSwitch
+                android:id="@+id/switchBoot"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/boot_label" />
+
+            <com.google.android.material.materialswitch.MaterialSwitch
+                android:id="@+id/switchReapply"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/reapply_label" />
+
+            <!-- 5. 状态回读区 -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="@string/readback_title"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/readback_activated" />
+                <TextView
+                    android:id="@+id/tvReadActivated"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/readback_level" />
+                <TextView
+                    android:id="@+id/tvReadLevel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/readback_persist" />
+                <TextView
+                    android:id="@+id/tvReadPersist"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/readback_oplus" />
+                <TextView
+                    android:id="@+id/tvReadOplus"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="@string/verify_hint"
+                android:textSize="12sp" />
+
+            <Button
+                android:id="@+id/btnCopyVerify"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="@string/btn_copy_verify" />
+
+            <!-- 6. 重新应用 -->
+            <Button
+                android:id="@+id/btnReapply"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="@string/btn_reapply" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:layout_marginBottom="24dp"
+                android:text="@string/info_text"
+                android:textSize="12sp" />
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>

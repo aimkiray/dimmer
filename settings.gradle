@@ -1,0 +1,14 @@
+pluginManagement {
+    repositories { google(); mavenCentral(); gradlePluginPortal() }
+    resolutionStrategy {
+        eachPlugin {
+            if (requested.id.id == 'com.android.application') {
+                // 离线缓存缺 com.android.application.gradle.plugin 标记，直接映射到 AGP 模块坐标
+                useModule("com.android.tools.build:gradle:${requested.version}")
+            }
+        }
+    }
+}
+dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { google(); mavenCentral() } }
+rootProject.name = 'dimmer'
+include ':app'
