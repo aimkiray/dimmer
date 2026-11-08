@@ -9,6 +9,18 @@ class Prefs(context: Context) {
     private val sp: SharedPreferences =
         context.applicationContext.getSharedPreferences("dimmer_prefs", Context.MODE_PRIVATE)
 
+    init {
+        // preferredLevel 播种冻结：首次初始化（含升级用户）无键时以 lastLevel 播种一次，
+        // 此后 getter 恒命中已存键，不再随 lastLevel 动态回退
+        try {
+            if (!sp.contains(KEY_PREFERRED_LEVEL)) {
+                sp.edit().putInt(KEY_PREFERRED_LEVEL, lastLevel).apply()
+            }
+        } catch (t: Throwable) {
+            // 播种失败仅停留在无键态，由 getter 兜底 DEFAULT_LEVEL
+        }
+    }
+
     var lastLevel: Int
         get() = try {
             sp.getInt(KEY_LAST_LEVEL, DEFAULT_LEVEL).coerceIn(0, 100)
@@ -16,6 +28,18 @@ class Prefs(context: Context) {
             DEFAULT_LEVEL
         }
         set(v) = sp.edit().putInt(KEY_LAST_LEVEL, v.coerceIn(0, 100)).apply()
+
+    /**
+     * 用户上次显式设置的强度（偏好基准）：首次初始化时以 lastLevel 播种冻结，
+     * 此后仅由主界面拖动强度滑块显式设置更新；预设磁贴切换不改写它。
+     */
+    var preferredLevel: Int
+        get() = try {
+            sp.getInt(KEY_PREFERRED_LEVEL, DEFAULT_LEVEL).coerceIn(0, 100)
+        } catch (t: Throwable) {
+            DEFAULT_LEVEL
+        }
+        set(v) = sp.edit().putInt(KEY_PREFERRED_LEVEL, v.coerceIn(0, 100)).apply()
 
     /**
      * 用户意图镜像：仅由用户显式操作（总开关 / 磁贴切换成功）修改。
@@ -66,6 +90,7 @@ class Prefs(context: Context) {
     companion object {
         const val DEFAULT_LEVEL = 100
         private const val KEY_LAST_LEVEL = "last_level"
+        private const val KEY_PREFERRED_LEVEL = "preferred_level"
         private const val KEY_MASTER_ON = "master_on"
         private const val KEY_LAST_APPLY_OK = "last_apply_ok"
         private const val KEY_PERSIST_ON = "persist_on"

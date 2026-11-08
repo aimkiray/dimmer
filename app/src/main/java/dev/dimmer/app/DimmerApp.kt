@@ -5,7 +5,7 @@ import com.google.android.material.color.DynamicColors
 
 class DimmerApp : Application() {
 
-    /** 覆盖监听器：唯一对外共享组件（MainActivity / DimTileService 取用）。 */
+    /** 覆盖监听器：唯一对外共享组件（MainActivity / DimTileService / DimPresetTileService 取用）。 */
     lateinit var guard: OplusSliderGuard
         private set
 

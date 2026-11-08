@@ -46,32 +46,37 @@ class RbcController(private val context: Context, private val prefs: Prefs) {
 
     /**
      * 先写 level 再写 activated=1，使一次生效即为目标强度。
-     * 写链结果记入 lastApplyOk；masterOn（用户意图）只在成功时同步，
+     * 写链失败（Failed）记入 lastApplyOk；masterOn（用户意图）只在成功时同步，
      * 失败绝不动它——后台调用方失败由 lastApplyOk 承载。
+     * Denied 不记 lastApplyOk；链内 Denied 可能发生在 level 已写之后，键可能已
+     * 部分写入（含 lastLevel 镜像同步），由回读/镜像兜底。
      */
     fun turnOn(level: Int): Result {
         val r1 = setLevel(level)
         if (r1 !is Result.Ok) {
-            prefs.lastApplyOk = false
+            // 链首 Denied 即 level 未写入，不记失败；仅真实写入失败才污染镜像
+            if (r1 is Result.Failed) prefs.lastApplyOk = false
             return r1
         }
         val r2 = put(false, KEY_ACTIVATED, 1)
         if (r2 is Result.Ok) {
             prefs.masterOn = true
             prefs.lastApplyOk = true
-        } else {
+        } else if (r2 is Result.Failed) {
+            // 此处 Denied 时 level/lastLevel 已写入：不记 lastApplyOk，由回读/镜像兜底
             prefs.lastApplyOk = false
         }
         return r2
     }
 
-    /** 只写 activated=0，level 保留以便下次恢复；写链结果同样记入 lastApplyOk。 */
+    /** 只写 activated=0，level 保留以便下次恢复；写链失败（Failed）同样记入 lastApplyOk，Denied 不动镜像。 */
     fun turnOff(): Result {
         val r = put(false, KEY_ACTIVATED, 0)
         if (r is Result.Ok) {
             prefs.masterOn = false
             prefs.lastApplyOk = true
-        } else {
+        } else if (r is Result.Failed) {
+            // 单键写入：Denied 即 activated 未写，不记失败
             prefs.lastApplyOk = false
         }
         return r
@@ -92,6 +97,8 @@ class RbcController(private val context: Context, private val prefs: Prefs) {
         Triple(readSecureInt(KEY_ACTIVATED), readSecureInt(KEY_LEVEL), readSecureInt(KEY_PERSIST))
 
     fun readActivated(): Int? = readSecureInt(KEY_ACTIVATED)
+
+    fun readLevel(): Int? = readSecureInt(KEY_LEVEL)
 
     fun readPanelDim(): Int? = try {
         Settings.Global.getInt(context.contentResolver, OPLUS_PANEL_KEY)

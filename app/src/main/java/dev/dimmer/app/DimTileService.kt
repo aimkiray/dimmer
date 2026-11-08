@@ -1,5 +1,6 @@
 package dev.dimmer.app
 
+import android.app.PendingIntent
 import android.content.Intent
 import android.os.Build
 import android.service.quicksettings.Tile
@@ -37,14 +38,14 @@ class DimTileService : TileService() {
                 t.label = getString(R.string.app_name)
                 t.subtitle = getString(
                     R.string.tile_subtitle_level,
-                    controller.readBack().second ?: prefs.lastLevel
+                    RbcController.clampLevel(controller.readBack().second ?: prefs.lastLevel)
                 )
             } else {
                 // API 26–28 无 subtitle：等级并入 label 兜底显示
                 t.label = getString(
                     R.string.tile_label_level,
                     getString(R.string.app_name),
-                    controller.readBack().second ?: prefs.lastLevel
+                    RbcController.clampLevel(controller.readBack().second ?: prefs.lastLevel)
                 )
             }
         }
@@ -60,8 +61,8 @@ class DimTileService : TileService() {
         val on = currentActivated() == 1
         val r = if (on) controller.turnOff() else controller.turnOn(prefs.lastLevel)
         when (r) {
-            // 镜像不在此改：controller 写成功才同步 masterOn，失败由 lastApplyOk 承载；
-            // Denied/Failed 路径对称——都只刷新磁贴（Denied 另拉门界面）
+            // 镜像不在此改：controller 写成功才同步 masterOn，写失败由 lastApplyOk 承载
+            // （Denied 不记失败，键可能已部分写入）；Denied/Failed 路径对称——都只刷新磁贴（Denied 另拉门界面）
             is RbcController.Result.Denied -> {
                 openGate()
                 refreshTile()
@@ -74,10 +75,17 @@ class DimTileService : TileService() {
         try {
             val i = Intent(this, MainActivity::class.java)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            // startActivityAndCollapse 自 API 34 起弃用（官方建议改 startActivity）；
-            // minSdk 26 需兼容保留该调用以维持"拉起即折叠面板"语义
-            @Suppress("DEPRECATION")
-            startActivityAndCollapse(i)
+            // targetSdk≥34 时 Intent 版 startActivityAndCollapse 被系统变更门控，
+            // 必抛 UnsupportedOperationException（会被下方 catch 吞掉、门界面拉不起来），
+            // 须改走 PendingIntent 重载；API<34 无此门控，保留 Intent 版
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                startActivityAndCollapse(
+                    PendingIntent.getActivity(this, 0, i, PendingIntent.FLAG_IMMUTABLE)
+                )
+            } else {
+                @Suppress("DEPRECATION")
+                startActivityAndCollapse(i)
+            }
         } catch (t: Throwable) {
             // 静默失败，不崩溃
         }

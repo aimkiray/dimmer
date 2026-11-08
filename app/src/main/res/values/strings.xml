@@ -61,6 +61,8 @@
 
     <!-- 磁贴 -->
     <string name="tile_label_unauthorized">Dimmer·未授权</string>
+    <string name="tile_preset_label">Dimmer·强度</string>
+    <string name="tile_preset_label_level">Dimmer·强度 %1$d</string>
     <string name="tile_subtitle_level">强度 %1$d</string>
     <string name="tile_label_level">%1$s·强度 %2$d</string>
 

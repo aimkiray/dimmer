@@ -173,6 +173,8 @@ class MainActivity : AppCompatActivity(), OplusSliderGuard.Listener {
             override fun onStopTrackingTouch(slider: Slider) {
                 if (!requirePermissionOrGate()) return
                 val v = slider.value.toInt()
+                // 记录用户设置基准（供强度磁贴切换回读）
+                prefs.preferredLevel = v
                 val r = if (masterSwitch.isChecked) {
                     // 开关 ON 时保持/重写 activated=1
                     controller.turnOn(v)
