@@ -1,4 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.Dimmer" parent="Theme.Material3.DayNight.NoActionBar" />
+    <style name="Theme.Dimmer" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="bottomSheetDialogTheme">@style/ThemeOverlay.Dimmer.BottomSheet</item>
+    </style>
+
+    <!-- MDC 自带的 paddingBottomSystemWindowInsets 关闭：弹层底部 inset 由
+         openAdvancedSheet 的 OnApplyWindowInsetsListener 单源写入，防双倍 -->
+    <style name="ThemeOverlay.Dimmer.BottomSheet" parent="ThemeOverlay.Material3.BottomSheetDialog">
+        <item name="bottomSheetStyle">@style/Widget.Dimmer.BottomSheet</item>
+    </style>
+    <style name="Widget.Dimmer.BottomSheet" parent="Widget.Material3.BottomSheet.Modal">
+        <item name="paddingBottomSystemWindowInsets">false</item>
+    </style>
 </resources>

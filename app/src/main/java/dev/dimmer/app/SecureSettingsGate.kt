@@ -21,7 +21,8 @@ object SecureSettingsGate {
      */
     const val GRANT_COMMAND_ALT = "adb install -r -g <apk路径>"
 
-    const val VERIFY_COMMAND = "adb shell dumpsys display | findstr rbc"
+    // grep 在设备侧执行（toybox 自带），宿主 Windows/macOS/Linux 通吃（findstr 仅 Windows）
+    const val VERIFY_COMMAND = "adb shell \"dumpsys display | grep rbc\""
 
     fun hasPermission(context: Context): Boolean =
         context.checkSelfPermission(PERMISSION) == PackageManager.PERMISSION_GRANTED

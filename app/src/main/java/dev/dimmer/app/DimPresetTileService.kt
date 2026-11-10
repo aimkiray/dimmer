@@ -10,7 +10,8 @@ import android.service.quicksettings.TileService
 class DimPresetTileService : TileService() {
 
     private val prefs: Prefs by lazy { Prefs(this) }
-    private val controller: RbcController by lazy { RbcController(this, prefs) }
+    // applicationContext：controller 不持 Service，防生命周期外引用泄漏（与 MainActivity 同约定）
+    private val controller: RbcController by lazy { RbcController(applicationContext, prefs) }
 
     override fun onStartListening() {
         super.onStartListening()

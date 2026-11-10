@@ -2,6 +2,9 @@ package dev.dimmer.app
 
 import android.content.ClipData
 import android.content.ClipboardManager
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Bundle
 import android.view.View
 import android.widget.TextView
@@ -18,12 +21,18 @@ import com.google.android.material.materialswitch.MaterialSwitch
 import com.google.android.material.slider.Slider
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.R as MR
+import rikka.shizuku.Shizuku
+import java.net.HttpURLConnection
+import java.net.URL
+import org.json.JSONObject
 
 /** 唯一 Activity：权限门（态 A）+ 主控界面（态 B）。onResume 重新检测权限并回读状态。 */
 class MainActivity : AppCompatActivity(), OplusSliderGuard.Listener {
 
     private lateinit var prefs: Prefs
     private lateinit var controller: RbcController
+    private lateinit var desat: DesatController
+    private lateinit var warm: NightWarmController
 
     private var suppress = false
 
@@ -39,29 +48,53 @@ class MainActivity : AppCompatActivity(), OplusSliderGuard.Listener {
     private lateinit var tvMasterState: TextView
     private lateinit var levelSlider: Slider
     private lateinit var tvLevelValue: TextView
+    private lateinit var rowWarm: View
+    private lateinit var warmSlider: Slider
+    private lateinit var tvWarmValue: TextView
+    private lateinit var tvWarmSub: TextView
+    private lateinit var rowSat: View
+    private lateinit var satSlider: Slider
+    private lateinit var tvSatValue: TextView
+    private lateinit var tvSatSub: TextView
     private lateinit var switchPersist: MaterialSwitch
     private lateinit var switchBoot: MaterialSwitch
     private lateinit var switchReapply: MaterialSwitch
     private lateinit var panelSwitch: MaterialSwitch
-    private lateinit var btnReapply: MaterialButton
+    private lateinit var rowPanel: View
+    private lateinit var tvPanelSub: TextView
     private lateinit var rootView: View
 
     // 诊断弹层引用：仅弹层展示期间非空，populateMain 顺带刷新
     private var sheetDialog: BottomSheetDialog? = null
+    private var sheetView: View? = null
     private var sheetActivated: TextView? = null
     private var sheetLevel: TextView? = null
     private var sheetPersist: TextView? = null
     private var sheetPanel: TextView? = null
     private var lastRead: Triple<Int?, Int?, Int?> = Triple(null, null, null)
+    /** 进程内是否已在 READY 态重放过降饱和（授权弹窗期进程死亡→结果丢失的残端兜底）。 */
+    private var satReadySeen = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         prefs = Prefs(this)
-        controller = RbcController(this, prefs)
+        // applicationContext：controller 不持 Activity，防生命周期外引用泄漏
+        controller = RbcController(applicationContext, prefs)
+        desat = DesatController(prefs)
+        warm = NightWarmController(applicationContext, prefs, desat)
         setContentView(R.layout.activity_main)
         bindViews()
         wireGate()
         wireMain()
+        // Shizuku 授权结果监听挂 Activity 全生命周期（官方 demo 同法）：
+        // 授权页是外部 Activity，拉起它必触发本页 onPause——若按
+        // onResume/onPause 挂摘，结果回传时监听已被摘除，replayIfNeeded
+        // 成为死代码（评审 D:S-1）
+        try {
+            Shizuku.addRequestPermissionResultListener(shizukuPermListener)
+        } catch (t: Throwable) {
+            // Shizuku 不可用时静默
+        }
     }
 
     override fun onResume() {
@@ -77,13 +110,37 @@ class MainActivity : AppCompatActivity(), OplusSliderGuard.Listener {
         super.onPause()
     }
 
+    override fun onDestroy() {
+        try {
+            Shizuku.removeRequestPermissionResultListener(shizukuPermListener)
+        } catch (t: Throwable) {
+            // Shizuku 不可用时静默
+        }
+        sheetDialog?.dismiss()
+        super.onDestroy()
+    }
+
+    /** Shizuku 授权回调：授权成功则重放本地降饱和档位并刷新行状态。 */
+    private val shizukuPermListener =
+        Shizuku.OnRequestPermissionResultListener { requestCode, grantResult ->
+            if (requestCode != DesatController.REQUEST_CODE) return@OnRequestPermissionResultListener
+            if (grantResult == PackageManager.PERMISSION_GRANTED) {
+                snack(getString(R.string.msg_applied))
+                desat.replayIfNeeded()
+                warm.reconcile()
+            } else {
+                snack(getString(R.string.sat_permission_denied))
+            }
+            populateMain()
+        }
+
     private fun bindViews() {
         rootView = findViewById(R.id.root)
         gateScroll = findViewById(R.id.gateScroll)
         mainGroup = findViewById(R.id.mainGroup)
         // 手势导航栏兜底：底部 inset 转为滚动内容内边距（ScrollView 自身 padding
         // 对未填满视口的内容不生效），保证末项与手势区之间留出间隙
-        val minGap = (16 * resources.displayMetrics.density).toInt()
+        val minGap = (40 * resources.displayMetrics.density).toInt()
         listOf(gateScroll, mainGroup).forEach { sv ->
             val content = sv.getChildAt(0)
             val base = content.paddingBottom
@@ -108,6 +165,14 @@ class MainActivity : AppCompatActivity(), OplusSliderGuard.Listener {
         tvMasterState = findViewById(R.id.tvMasterState)
         levelSlider = findViewById(R.id.levelSlider)
         tvLevelValue = findViewById(R.id.tvLevelValue)
+        rowWarm = findViewById(R.id.rowWarm)
+        warmSlider = findViewById(R.id.warmSlider)
+        tvWarmValue = findViewById(R.id.tvWarmValue)
+        tvWarmSub = findViewById(R.id.tvWarmSub)
+        rowSat = findViewById(R.id.rowSat)
+        satSlider = findViewById(R.id.satSlider)
+        tvSatValue = findViewById(R.id.tvSatValue)
+        tvSatSub = findViewById(R.id.tvSatSub)
         findViewById<View>(R.id.heroHeader).setOnClickListener { masterSwitch.toggle() }
         switchPersist = findViewById(R.id.switchPersist)
         switchBoot = findViewById(R.id.switchBoot)
@@ -116,9 +181,10 @@ class MainActivity : AppCompatActivity(), OplusSliderGuard.Listener {
         findViewById<View>(R.id.rowBoot).setOnClickListener { switchBoot.toggle() }
         findViewById<View>(R.id.rowReapply).setOnClickListener { switchReapply.toggle() }
         panelSwitch = findViewById(R.id.panelSwitch)
-        findViewById<View>(R.id.rowPanel).setOnClickListener { panelSwitch.toggle() }
+        rowPanel = findViewById(R.id.rowPanel)
+        rowPanel.setOnClickListener { panelSwitch.toggle() }
+        tvPanelSub = findViewById(R.id.tvPanelSub)
         findViewById<View>(R.id.rowAdvanced).setOnClickListener { openAdvancedSheet() }
-        btnReapply = findViewById(R.id.btnReapply)
     }
 
     // ---------- 态 A：门界面 ----------
@@ -148,8 +214,12 @@ class MainActivity : AppCompatActivity(), OplusSliderGuard.Listener {
     // ---------- 态 B：主界面 ----------
 
     private fun wireMain() {
-        btnReapply.setOnClickListener { reapply() }
-
+        // FR-13 能力门控：非 OPlus 设备无面板层通道，行禁用并标注
+        if (!RbcController.hasPanelLayer()) {
+            panelSwitch.isEnabled = false
+            rowPanel.isEnabled = false
+            tvPanelSub.setText(R.string.panel_sub_unsupported)
+        }
         masterSwitch.setOnCheckedChangeListener { _, isChecked ->
             if (suppress) return@setOnCheckedChangeListener
             if (!requirePermissionOrGate()) {
@@ -159,7 +229,14 @@ class MainActivity : AppCompatActivity(), OplusSliderGuard.Listener {
             val r = if (isChecked) {
                 controller.turnOn(levelSlider.value.toInt())
             } else {
-                controller.turnOff()
+                controller.turnOff().also {
+                    // 调暗关闭联动释放暖色（夜灯态独立于 RBC 存活，不放会成僵尸暖色）
+                    if (it is RbcController.Result.Ok &&
+                        warm.releaseAfterDimOff() is DesatController.Result.Failed
+                    ) {
+                        snack(getString(R.string.warm_release_failed))
+                    }
+                }
             }
             handleResult(r, okFeedback = true) { populateMain() }
         }
@@ -182,6 +259,50 @@ class MainActivity : AppCompatActivity(), OplusSliderGuard.Listener {
                     controller.setLevel(v)
                 }
                 handleResult(r, okFeedback = false) { populateMain() }
+            }
+        })
+
+        // 暖色：Shizuku 夜灯通道，与降饱和同域授权；行点击承载"未授权→拉起授权"
+        rowWarm.setOnClickListener { onShizukuRowClick() }
+        warmSlider.addOnChangeListener { _, value, _ ->
+            tvWarmValue.text = value.toInt().toString()
+        }
+        warmSlider.addOnSliderTouchListener(object : Slider.OnSliderTouchListener {
+            override fun onStartTrackingTouch(slider: Slider) {}
+            override fun onStopTrackingTouch(slider: Slider) {
+                when (val r = warm.applyLevel(slider.value.toInt())) {
+                    is DesatController.Result.Ok -> populateMain()
+                    is DesatController.Result.Unavailable -> {
+                        snack(getString(R.string.sat_sub_unavailable))
+                        populateMain()
+                    }
+                    is DesatController.Result.Failed -> {
+                        snack(getString(R.string.msg_write_failed, r.reason))
+                        populateMain()
+                    }
+                }
+            }
+        })
+
+        // 降饱和：Shizuku 通道，与 RBC 无关；行点击仅承载"未授权→拉起授权"动作
+        rowSat.setOnClickListener { onShizukuRowClick() }
+        satSlider.addOnChangeListener { _, value, _ ->
+            tvSatValue.text = value.toInt().toString()
+        }
+        satSlider.addOnSliderTouchListener(object : Slider.OnSliderTouchListener {
+            override fun onStartTrackingTouch(slider: Slider) {}
+            override fun onStopTrackingTouch(slider: Slider) {
+                when (val r = desat.applyLevel(slider.value.toInt())) {
+                    is DesatController.Result.Ok -> populateMain()
+                    is DesatController.Result.Unavailable -> {
+                        snack(getString(R.string.sat_sub_unavailable))
+                        populateMain()
+                    }
+                    is DesatController.Result.Failed -> {
+                        snack(getString(R.string.msg_write_failed, r.reason))
+                        populateMain()
+                    }
+                }
             }
         })
 
@@ -222,6 +343,23 @@ class MainActivity : AppCompatActivity(), OplusSliderGuard.Listener {
         populateMain()
     }
 
+    /** 暖色/降饱和行共用：NEED_PERMISSION 拉起授权（永久拒绝引导设置），UNAVAILABLE 提示激活。 */
+    private fun onShizukuRowClick() {
+        when (desat.state()) {
+            DesatController.State.NEED_PERMISSION ->
+                // 拒绝且不再询问时 requestPermission 静默不弹窗，引导到
+                // Shizuku 设置内手动开启（评审 D:m 项）
+                if (desat.shouldShowRationale()) {
+                    desat.requestPermission()
+                } else {
+                    snack(getString(R.string.sat_permission_permanent))
+                }
+            DesatController.State.UNAVAILABLE ->
+                snack(getString(R.string.sat_sub_unavailable))
+            else -> {}
+        }
+    }
+
     private fun populateMain() {
         val (act, lvl, per) = controller.readBack()
         lastRead = Triple(act, lvl, per)
@@ -246,6 +384,46 @@ class MainActivity : AppCompatActivity(), OplusSliderGuard.Listener {
             switchBoot.isChecked = prefs.autoRestoreOnBoot
             switchReapply.isChecked = prefs.autoReapply
             panelSwitch.isChecked = controller.readPanelDim() == 1
+            // Shizuku 通道共用就绪态：暖色（夜灯）与降饱和同域
+            val satState = desat.state()
+            // 进程内首见 READY 幂等重放一次：覆盖"授权弹窗期间进程死亡→结果
+            // 丢失"与开机漏放的残端（写同值无害，best-effort）
+            if (satState == DesatController.State.READY && !satReadySeen) {
+                satReadySeen = true
+                desat.replayIfNeeded()
+            }
+            // 每次 READY 都对账暖色（2 次 binder 读）：后台期间系统夜灯被
+            // 外部动过时，镜像在滑块读值前收口，UI 不撒谎
+            if (satState == DesatController.State.READY) warm.reconcile()
+            // 暖色：RBC 激活才可调；READY 才可升档，非 READY 仅放行降档释放
+            // （release 有 Secure 键降级不依赖 Shizuku）——僵尸态留释放路径
+            warmSlider.value = prefs.warmLevel.toFloat()
+            tvWarmValue.text = prefs.warmLevel.toString()
+            warmSlider.isEnabled =
+                on && (satState == DesatController.State.READY || prefs.warmLevel > 0)
+            rowWarm.isClickable = on && satState != DesatController.State.READY
+            rowWarm.isFocusable = rowWarm.isClickable
+            tvWarmSub.text = getString(
+                when {
+                    !on -> R.string.warm_need_rbc
+                    satState == DesatController.State.READY -> R.string.warm_sub
+                    satState == DesatController.State.NEED_PERMISSION -> R.string.sat_sub_permission
+                    else -> R.string.sat_sub_unavailable
+                }
+            )
+            // 降饱和：Shizuku 存活∧已授权才可调；未授权行可点击拉起授权
+            satSlider.value = prefs.satLevel.toFloat()
+            tvSatValue.text = prefs.satLevel.toString()
+            satSlider.isEnabled = satState == DesatController.State.READY
+            rowSat.isClickable = satState != DesatController.State.READY
+            rowSat.isFocusable = rowSat.isClickable
+            tvSatSub.text = getString(
+                when (satState) {
+                    DesatController.State.READY -> R.string.sat_sub
+                    DesatController.State.NEED_PERMISSION -> R.string.sat_sub_permission
+                    DesatController.State.UNAVAILABLE -> R.string.sat_sub_unavailable
+                }
+            )
         } finally {
             suppress = false
         }
@@ -296,7 +474,10 @@ class MainActivity : AppCompatActivity(), OplusSliderGuard.Listener {
         tvPan.text = when (controller.readPanelDim()) {
             1 -> getString(R.string.value_on)
             0 -> getString(R.string.value_off)
-            else -> getString(R.string.value_unknown)
+            else -> getString(
+                if (RbcController.hasPanelLayer()) R.string.value_unknown
+                else R.string.value_unsupported
+            )
         }
     }
 
@@ -308,10 +489,17 @@ class MainActivity : AppCompatActivity(), OplusSliderGuard.Listener {
         val scroll = content.findViewById<NestedScrollView>(R.id.sheetScroll)
         val base = scroll.paddingBottom
         ViewCompat.setOnApplyWindowInsetsListener(scroll) { v, insets ->
-            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.updatePadding(bottom = base + bars.bottom)
+            // 与主界面同一组 inset 源（MDC 自带的 paddingBottomSystemWindowInsets
+            // 已在主题中关闭，此处为唯一 inset 写入点）
+            val bottom = maxOf(
+                insets.getInsets(WindowInsetsCompat.Type.systemBars()).bottom,
+                insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom,
+                insets.getInsets(WindowInsetsCompat.Type.mandatorySystemGestures()).bottom
+            )
+            v.updatePadding(bottom = base + bottom)
             insets
         }
+        content.findViewById<TextView>(R.id.tvVersion).text = "v" + currentVersion()
         sheetActivated = content.findViewById(R.id.tvReadActivated)
         sheetLevel = content.findViewById(R.id.tvReadLevel)
         sheetPersist = content.findViewById(R.id.tvReadPersist)
@@ -319,7 +507,44 @@ class MainActivity : AppCompatActivity(), OplusSliderGuard.Listener {
         content.findViewById<TextView>(R.id.tvVerifyCmd).text = SecureSettingsGate.VERIFY_COMMAND
         content.findViewById<View>(R.id.btnCopyVerify)
             .setOnClickListener { copyToClipboard(SecureSettingsGate.VERIFY_COMMAND) }
+        // 重新写入降级至弹层：与「当前状态」回读同节，低频兜底操作收进低频入口
+        content.findViewById<View>(R.id.btnSheetReapply).setOnClickListener {
+            reapply()
+            dialog.dismiss()
+        }
+        content.findViewById<View>(R.id.btnGithub).setOnClickListener { openUrl(GITHUB_URL) }
+        // updateUrl 为闭包局部变量：弹层每次打开独立持有，旧弹层的异步回调
+        // 不会污染新弹层状态（评审 M-1）
+        var updateUrl: String? = null
+        val btnUpdate = content.findViewById<TextView>(R.id.btnUpdate)
+        btnUpdate.setOnClickListener {
+            val url = updateUrl
+            if (url != null) {
+                openUrl(url)
+                return@setOnClickListener
+            }
+            btnUpdate.text = getString(R.string.update_checking)
+            btnUpdate.isEnabled = false
+            Thread {
+                val result = checkUpdate()
+                runOnUiThread {
+                    btnUpdate.isEnabled = true
+                    when (result) {
+                        is UpdateCheck.Failed ->
+                            btnUpdate.text = getString(R.string.update_failed)
+                        is UpdateCheck.UpToDate ->
+                            btnUpdate.text = getString(R.string.update_latest)
+                        is UpdateCheck.Available -> {
+                            updateUrl = result.url
+                            btnUpdate.text = getString(R.string.update_available, result.tag)
+                        }
+                    }
+                }
+            }.start()
+        }
+        sheetView = content
         dialog.setOnDismissListener {
+            sheetView = null
             sheetActivated = null
             sheetLevel = null
             sheetPersist = null
@@ -399,8 +624,90 @@ class MainActivity : AppCompatActivity(), OplusSliderGuard.Listener {
     }
 
     private fun snack(msg: String) {
-        Snackbar.make(rootView, msg, Snackbar.LENGTH_SHORT)
-            .setAnchorView(if (mainGroup.visibility == View.VISIBLE) btnReapply else null)
-            .show()
+        // 弹层存活时锚到弹层视图：Snackbar 锚 Activity rootView 会被 bottom sheet 遮挡
+        Snackbar.make(sheetView ?: rootView, msg, Snackbar.LENGTH_SHORT).show()
+    }
+
+    private fun openUrl(url: String) {
+        try {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+        } catch (t: Throwable) {
+            snack(getString(R.string.msg_open_link_failed))
+        }
+    }
+
+    private fun currentVersion(): String =
+        packageManager.getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(0))
+            .versionName ?: "0"
+
+    private sealed interface UpdateCheck {
+        data object Failed : UpdateCheck
+        data object UpToDate : UpdateCheck
+        data class Available(val tag: String, val url: String) : UpdateCheck
+    }
+
+    private fun checkUpdate(): UpdateCheck {
+        val conn = try {
+            URL(RELEASE_API).openConnection() as HttpURLConnection
+        } catch (t: Throwable) {
+            return UpdateCheck.Failed
+        }
+        return try {
+            conn.connectTimeout = 8000
+            conn.readTimeout = 8000
+            conn.setRequestProperty("Accept", "application/vnd.github+json")
+            conn.setRequestProperty("User-Agent", "dimmer/" + currentVersion())
+            conn.setRequestProperty("X-GitHub-Api-Version", "2022-11-28")
+            when (conn.responseCode) {
+                HttpURLConnection.HTTP_OK -> {
+                    val json =
+                        JSONObject(conn.inputStream.bufferedReader().use { it.readText() })
+                    val tag = json.optString("tag_name")
+                    if (tag.isEmpty()) UpdateCheck.Failed
+                    else if (!isNewer(tag, currentVersion())) UpdateCheck.UpToDate
+                    else UpdateCheck.Available(
+                        tag,
+                        sanitizeReleaseUrl(json.optString("html_url"))
+                    )
+                }
+                // 仓库尚无 release 时该端点返回 404——视为"已是最新"而非网络失败
+                HttpURLConnection.HTTP_NOT_FOUND -> UpdateCheck.UpToDate
+                else -> UpdateCheck.Failed
+            }
+        } catch (t: Throwable) {
+            UpdateCheck.Failed
+        } finally {
+            conn.disconnect()
+        }
+    }
+
+    // 纵深防御：只放行 github.com 的 https 链接，其余回落到仓库主页
+    private fun sanitizeReleaseUrl(url: String): String {
+        val u = Uri.parse(url)
+        return if (u.scheme == "https" && u.host?.endsWith("github.com") == true) {
+            url
+        } else {
+            GITHUB_URL
+        }
+    }
+
+    // 纯数字点分版本比较：剥 v 前缀与 -pre/+build 后缀后按段逐个比（v0.2.0 > 0.1.9）
+    private fun isNewer(tag: String, current: String): Boolean {
+        fun parts(v: String) = v.trimStart('v', 'V')
+            .substringBefore('-').substringBefore('+')
+            .split('.')
+            .map { it.filter { c -> c in '0'..'9' }.toLongOrNull() ?: 0L }
+        val a = parts(tag); val b = parts(current)
+        for (i in 0 until maxOf(a.size, b.size)) {
+            val x = a.getOrElse(i) { 0L }; val y = b.getOrElse(i) { 0L }
+            if (x != y) return x > y
+        }
+        return false
+    }
+
+    companion object {
+        private const val GITHUB_URL = "https://github.com/aimkiray/dimmer"
+        private const val RELEASE_API =
+            "https://api.github.com/repos/aimkiray/dimmer/releases/latest"
     }
 }

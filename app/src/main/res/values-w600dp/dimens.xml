@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 宽屏（sw≥600dp，平板/折叠展开）：加大边距把内容收敛到 ~570dp 栏宽，
+         避免滑块轨道横跨全屏造成的拖动负担与空旷感 -->
+    <dimen name="content_side_pad">72dp</dimen>
+</resources>

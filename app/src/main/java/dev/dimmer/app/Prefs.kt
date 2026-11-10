@@ -87,6 +87,77 @@ class Prefs(context: Context) {
         }
         set(v) = sp.edit().putBoolean(KEY_AUTO_REAPPLY, v).apply()
 
+    /** 暖色档位镜像：仅 UI 回显；夜灯态由系统服务持久化，本 App 不在启动时重断言（reconcile 对账）。 */
+    var warmLevel: Int
+        get() = try {
+            sp.getInt(KEY_WARM_LEVEL, 0).coerceIn(0, 100)
+        } catch (t: Throwable) {
+            0
+        }
+        set(v) = sp.edit().putInt(KEY_WARM_LEVEL, v.coerceIn(0, 100)).apply()
+
+    /** 夜灯接管快照：是否已捕获系统夜灯原态（接管首写时置位，释放时清除）。 */
+    var warmNightCaptured: Boolean
+        get() = try {
+            sp.getBoolean(KEY_WARM_NIGHT_CAPTURED, false)
+        } catch (t: Throwable) {
+            false
+        }
+        set(v) = sp.edit().putBoolean(KEY_WARM_NIGHT_CAPTURED, v).apply()
+
+    /** 夜灯接管快照：接管前系统夜灯是否激活。 */
+    var warmNightWasOn: Boolean
+        get() = try {
+            sp.getBoolean(KEY_WARM_NIGHT_WASON, false)
+        } catch (t: Throwable) {
+            false
+        }
+        set(v) = sp.edit().putBoolean(KEY_WARM_NIGHT_WASON, v).apply()
+
+    /** 夜灯接管快照：接管前系统夜灯色温（K），释放时还回；写入钳制合理 K 域。 */
+    var warmNightTemp0: Int
+        get() = try {
+            sp.getInt(KEY_WARM_NIGHT_TEMP0, DEFAULT_NIGHT_TEMP)
+        } catch (t: Throwable) {
+            DEFAULT_NIGHT_TEMP
+        }
+        set(v) = sp.edit().putInt(KEY_WARM_NIGHT_TEMP0, v.coerceIn(0, 10000)).apply()
+
+    /** 快照三键单事务写：captured/wasOn/temp0 原子落盘，免崩溃撕裂出陈旧快照。 */
+    fun captureNight(wasOn: Boolean, temp0: Int) {
+        sp.edit()
+            .putBoolean(KEY_WARM_NIGHT_CAPTURED, true)
+            .putBoolean(KEY_WARM_NIGHT_WASON, wasOn)
+            .putInt(KEY_WARM_NIGHT_TEMP0, temp0.coerceIn(0, 10000))
+            .apply()
+    }
+
+    /** 释放完成单事务清 warmLevel + captured（wasOn/temp0 留作陈旧值，由下次 capture 覆盖）。 */
+    fun releaseNight() {
+        sp.edit()
+            .putInt(KEY_WARM_LEVEL, 0)
+            .putBoolean(KEY_WARM_NIGHT_CAPTURED, false)
+            .apply()
+    }
+
+    /** 夜灯通道升级迁移标记：旧版 general_color_temperature 残留清理只做一次。 */
+    var warmGeneralMigrated: Boolean
+        get() = try {
+            sp.getBoolean(KEY_WARM_GENERAL_MIGRATED, false)
+        } catch (t: Throwable) {
+            false
+        }
+        set(v) = sp.edit().putBoolean(KEY_WARM_GENERAL_MIGRATED, v).apply()
+
+    /** 降饱和档位镜像：slot 150 仅存内存，Shizuku 复活/开机路径按它静默重放。 */
+    var satLevel: Int
+        get() = try {
+            sp.getInt(KEY_SAT_LEVEL, 0).coerceIn(0, 100)
+        } catch (t: Throwable) {
+            0
+        }
+        set(v) = sp.edit().putInt(KEY_SAT_LEVEL, v.coerceIn(0, 100)).apply()
+
     companion object {
         const val DEFAULT_LEVEL = 100
         private const val KEY_LAST_LEVEL = "last_level"
@@ -96,5 +167,12 @@ class Prefs(context: Context) {
         private const val KEY_PERSIST_ON = "persist_on"
         private const val KEY_AUTO_RESTORE = "auto_restore_on_boot"
         private const val KEY_AUTO_REAPPLY = "auto_reapply"
+        private const val KEY_WARM_LEVEL = "warm_level"
+        private const val KEY_WARM_NIGHT_CAPTURED = "warm_night_captured"
+        private const val KEY_WARM_NIGHT_WASON = "warm_night_wason"
+        private const val KEY_WARM_NIGHT_TEMP0 = "warm_night_temp0"
+        private const val KEY_WARM_GENERAL_MIGRATED = "warm_general_migrated"
+        private const val DEFAULT_NIGHT_TEMP = 4500
+        private const val KEY_SAT_LEVEL = "sat_level"
     }
 }

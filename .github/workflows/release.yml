@@ -1,0 +1,98 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*.*.*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g. v0.1.2)'
+        required: true
+        type: string
+
+# 同 tag 重复触发/并发 dispatch 不互踩；发布中不可取消防半成品 Release
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    env:
+      # secrets 不能直接用于 if:，经 env 中转（官方推荐模式）；仅保留判定所需的一个
+      KEYSTORE_B64: ${{ secrets.KEYSTORE_BASE64 }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      # tag 与 versionName 一致性校验：防"文件名 v0.2.0、包内 0.1.1"的名不符实
+      - name: Verify tag matches versionName
+        env:
+          TAG_NAME: ${{ inputs.tag || github.ref_name }}
+        run: |
+          VN=$(grep -oE "versionName '[^']+'" app/build.gradle | cut -d"'" -f2)
+          if [ "$VN" != "${TAG_NAME#v}" ]; then
+            echo "::error::tag ${TAG_NAME} != versionName ${VN} — bump app/build.gradle first"
+            exit 1
+          fi
+
+      # 有签名 secrets 时还原 keystore.properties + keystore 文件（两者均被 gitignore）
+      - name: Decode signing key
+        if: env.KEYSTORE_B64 != ''
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          mkdir -p keystore
+          printf '%s' "$KEYSTORE_B64" | base64 -di > keystore/keystore.jks
+          cat > keystore.properties <<EOF
+          storeFile=keystore/keystore.jks
+          storePassword=$KEYSTORE_PASSWORD
+          keyAlias=$KEY_ALIAS
+          keyPassword=$KEY_PASSWORD
+          EOF
+
+      # bash 调用不依赖 git 可执行位（Windows 提交 100644 的 gradlew 也能跑）
+      - name: Build release APK (signed)
+        if: env.KEYSTORE_B64 != ''
+        run: bash gradlew :app:assembleRelease
+
+      # 无签名 secrets 时回退 debug 构建（debug 签名可安装；产物名带 -debug 后缀
+      # 且标 prerelease——与签名包混发同名会导致签名不一致覆盖安装失败）
+      - name: Build debug APK (unsigned fallback)
+        if: env.KEYSTORE_B64 == ''
+        run: bash gradlew :app:assembleDebug
+
+      - name: Rename artifact
+        env:
+          TAG_NAME: ${{ inputs.tag || github.ref_name }}
+        run: |
+          TAG="${TAG_NAME//\//-}"
+          mkdir -p out
+          if [ -f app/build/outputs/apk/release/app-release.apk ]; then
+            cp app/build/outputs/apk/release/app-release.apk "out/dimmer-${TAG}.apk"
+          elif [ -f app/build/outputs/apk/debug/app-debug.apk ]; then
+            cp app/build/outputs/apk/debug/app-debug.apk "out/dimmer-${TAG}-debug.apk"
+          else
+            echo "::error::no APK produced"
+            exit 1
+          fi
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.tag || github.ref_name }}
+          files: out/*.apk
+          generate_release_notes: true
+          prerelease: ${{ env.KEYSTORE_B64 == '' }}
+          fail_on_unmatched_files: true

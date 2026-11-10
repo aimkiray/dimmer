@@ -41,7 +41,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:paddingHorizontal="20dp"
+                android:paddingHorizontal="@dimen/content_side_pad"
                 android:paddingTop="20dp">
 
                 <TextView
@@ -215,7 +215,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:paddingHorizontal="20dp">
+                android:paddingHorizontal="@dimen/content_side_pad">
 
                 <!-- 1. 主控卡片 -->
                 <com.google.android.material.card.MaterialCardView
@@ -286,7 +286,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="@string/level_label"
-                                android:textAppearance="?attr/textAppearanceTitleMedium"
+                                android:textAppearance="?attr/textAppearanceBodyLarge"
                                 android:textColor="?attr/colorOnSurface" />
 
                             <com.google.android.material.slider.Slider
@@ -326,52 +326,261 @@
                                 android:textColor="?attr/colorOnSurface" />
                         </LinearLayout>
 
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- 色彩调节：暖色/降饱和为色彩向参数，与极暗（亮度向）分卡 -->
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="24dp"
+                    android:layout_marginBottom="8dp"
+                    android:text="@string/section_color"
+                    android:textAppearance="?attr/textAppearanceTitleSmall"
+                    android:textColor="?attr/colorPrimary" />
+
+                <com.google.android.material.card.MaterialCardView
+                    style="@style/Widget.Material3.CardView.Filled"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:cardBackgroundColor="?attr/colorSurfaceContainer"
+                    app:cardCornerRadius="16dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="20dp">
+
+                        <!-- 暖色行：结构对齐「强度」行（label + slider + value），下挂提示副标题 -->
+                        <LinearLayout
+                            android:id="@+id/rowWarm"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:focusable="true"
+                            android:foreground="?attr/selectableItemBackground"
+                            android:orientation="vertical">
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal">
+
+                                <TextView
+                                    android:id="@+id/tvWarmLabel"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/warm_title"
+                                    android:textAppearance="?attr/textAppearanceBodyLarge"
+                                    android:textColor="?attr/colorOnSurface" />
+
+                                <com.google.android.material.slider.Slider
+                                    android:id="@+id/warmSlider"
+                                    android:saveEnabled="false"
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginHorizontal="8dp"
+                                    android:layout_weight="1"
+                                    android:contentDescription="@string/warm_slider_desc"
+                                    android:stepSize="1"
+                                    android:value="0"
+                                    android:valueFrom="0"
+                                    android:valueTo="100"
+                                    app:labelBehavior="gone"
+                                    app:tickVisible="false"
+                                    app:trackHeight="4dp"
+                                    app:trackCornerSize="2dp"
+                                    app:trackStopIndicatorSize="0dp"
+                                    app:trackColorActive="?attr/colorPrimary"
+                                    app:trackColorInactive="?attr/colorOutlineVariant"
+                                    app:thumbTrackGapSize="0dp"
+                                    app:thumbWidth="20dp"
+                                    app:thumbHeight="20dp"
+                                    app:thumbRadius="10dp"
+                                    app:thumbColor="?attr/colorPrimary"
+                                    app:thumbElevation="1dp"
+                                    app:haloRadius="20dp" />
+
+                                <TextView
+                                    android:id="@+id/tvWarmValue"
+                                    android:layout_width="36dp"
+                                    android:layout_height="wrap_content"
+                                    android:fontFeatureSettings="tnum"
+                                    android:gravity="end"
+                                    android:textAppearance="?attr/textAppearanceTitleMedium"
+                                    android:textColor="?attr/colorOnSurface" />
+                            </LinearLayout>
+
+                            <TextView
+                                android:id="@+id/tvWarmSub"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="@string/warm_sub"
+                                android:textAppearance="?attr/textAppearanceBodyMedium"
+                                android:textColor="?attr/colorOnSurfaceVariant" />
+                        </LinearLayout>
+
                         <com.google.android.material.divider.MaterialDivider
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginVertical="12dp"
                             app:dividerColor="?attr/colorOutlineVariant" />
 
+                        <!-- 降饱和行：Shizuku 通道，与 RBC 状态无关；行结构与「强度」行一致 -->
                         <LinearLayout
-                            android:id="@+id/rowPanel"
+                            android:id="@+id/rowSat"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:clickable="true"
                             android:focusable="true"
                             android:foreground="?attr/selectableItemBackground"
-                            android:gravity="center_vertical"
-                            android:minHeight="64dp"
-                            android:orientation="horizontal">
+                            android:orientation="vertical">
 
                             <LinearLayout
-                                android:layout_width="0dp"
+                                android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:orientation="vertical">
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal">
 
                                 <TextView
-                                    android:layout_width="match_parent"
+                                    android:id="@+id/tvSatLabel"
+                                    android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:text="@string/panel_title"
-                                    android:textAppearance="?attr/textAppearanceTitleMedium"
+                                    android:text="@string/sat_title"
+                                    android:textAppearance="?attr/textAppearanceBodyLarge"
                                     android:textColor="?attr/colorOnSurface" />
 
-                                <TextView
-                                    android:layout_width="match_parent"
+                                <com.google.android.material.slider.Slider
+                                    android:id="@+id/satSlider"
+                                    android:saveEnabled="false"
+                                    android:layout_width="0dp"
                                     android:layout_height="wrap_content"
-                                    android:text="@string/panel_sub"
-                                    android:textAppearance="?attr/textAppearanceBodyMedium"
-                                    android:textColor="?attr/colorOnSurfaceVariant" />
+                                    android:layout_marginHorizontal="8dp"
+                                    android:layout_weight="1"
+                                    android:contentDescription="@string/sat_slider_desc"
+                                    android:stepSize="1"
+                                    android:value="0"
+                                    android:valueFrom="0"
+                                    android:valueTo="100"
+                                    app:labelBehavior="gone"
+                                    app:tickVisible="false"
+                                    app:trackHeight="4dp"
+                                    app:trackCornerSize="2dp"
+                                    app:trackStopIndicatorSize="0dp"
+                                    app:trackColorActive="?attr/colorPrimary"
+                                    app:trackColorInactive="?attr/colorOutlineVariant"
+                                    app:thumbTrackGapSize="0dp"
+                                    app:thumbWidth="20dp"
+                                    app:thumbHeight="20dp"
+                                    app:thumbRadius="10dp"
+                                    app:thumbColor="?attr/colorPrimary"
+                                    app:thumbElevation="1dp"
+                                    app:haloRadius="20dp" />
+
+                                <TextView
+                                    android:id="@+id/tvSatValue"
+                                    android:layout_width="36dp"
+                                    android:layout_height="wrap_content"
+                                    android:fontFeatureSettings="tnum"
+                                    android:gravity="end"
+                                    android:textAppearance="?attr/textAppearanceTitleMedium"
+                                    android:textColor="?attr/colorOnSurface" />
                             </LinearLayout>
 
-                            <com.google.android.material.materialswitch.MaterialSwitch
-                                android:id="@+id/panelSwitch"
-                                android:layout_width="wrap_content"
+                            <!-- 彩色照片预览：全局色彩变换作用于本窗口，拖滑块实时褪色（自证效果）。
+                                 完整显示：adjustViewBounds 让框高跟随图片宽高比 -->
+                            <com.google.android.material.card.MaterialCardView
+                                android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:layout_marginStart="16dp"
-                                android:contentDescription="@string/panel_switch_desc"
-                                android:saveEnabled="false" />
+                                android:layout_marginTop="10dp"
+                                app:cardCornerRadius="12dp"
+                                app:cardElevation="0dp"
+                                app:cardBackgroundColor="@android:color/transparent"
+                                app:strokeColor="?attr/colorOutlineVariant"
+                                app:strokeWidth="1dp">
+
+                                <ImageView
+                                    android:id="@+id/ivSatPreview"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:adjustViewBounds="true"
+                                    android:contentDescription="@string/sat_preview_desc"
+                                    android:scaleType="fitCenter"
+                                    android:src="@drawable/sat_preview" />
+                            </com.google.android.material.card.MaterialCardView>
+
+                            <TextView
+                                android:id="@+id/tvSatSub"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="@string/sat_sub"
+                                android:textAppearance="?attr/textAppearanceBodyMedium"
+                                android:textColor="?attr/colorOnSurfaceVariant" />
                         </LinearLayout>
+
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- 设备专属：面板层为 ColorOS 硬件降白点通道，与极暗（软件变换层）
+                     不同源，独立成区避免与主开关/强度形成"子选项"误读 -->
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="24dp"
+                    android:layout_marginBottom="8dp"
+                    android:text="@string/section_device"
+                    android:textAppearance="?attr/textAppearanceTitleSmall"
+                    android:textColor="?attr/colorPrimary" />
+
+                <com.google.android.material.card.MaterialCardView
+                    style="@style/Widget.Material3.CardView.Filled"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:cardBackgroundColor="?attr/colorSurfaceContainer"
+                    app:cardCornerRadius="16dp">
+
+                    <LinearLayout
+                        android:id="@+id/rowPanel"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:foreground="?attr/selectableItemBackground"
+                        android:gravity="center_vertical"
+                        android:minHeight="64dp"
+                        android:orientation="horizontal"
+                        android:paddingHorizontal="20dp"
+                        android:paddingVertical="8dp">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="@string/panel_title"
+                                android:textAppearance="?attr/textAppearanceBodyLarge"
+                                android:textColor="?attr/colorOnSurface" />
+
+                            <TextView
+                                android:id="@+id/tvPanelSub"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="@string/panel_sub"
+                                android:textAppearance="?attr/textAppearanceBodyMedium"
+                                android:textColor="?attr/colorOnSurfaceVariant" />
+                        </LinearLayout>
+
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/panelSwitch"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="16dp"
+                            android:contentDescription="@string/panel_switch_desc"
+                            android:saveEnabled="false" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
@@ -542,13 +751,13 @@
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
-                <!-- 3. 诊断入口 -->
+                <!-- 3. 诊断入口：独立模块，与上方区块同间距 -->
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/rowAdvanced"
                     style="@style/Widget.Material3.CardView.Filled"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
+                    android:layout_marginTop="24dp"
                     android:clickable="true"
                     android:focusable="true"
                     android:foreground="?attr/selectableItemBackground"
@@ -565,17 +774,9 @@
                         android:paddingHorizontal="20dp"
                         android:paddingVertical="8dp">
 
-                        <ImageView
-                            android:layout_width="24dp"
-                            android:layout_height="24dp"
-                            android:importantForAccessibility="no"
-                            android:src="@drawable/ic_info"
-                            app:tint="?attr/colorOnSurfaceVariant" />
-
                         <LinearLayout
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:layout_marginStart="16dp"
                             android:layout_weight="1"
                             android:orientation="vertical">
 
@@ -604,16 +805,6 @@
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
-                <!-- 4. 主动作 -->
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnReapply"
-                    style="@style/Widget.Material3.Button.TonalButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="56dp"
-                    android:layout_marginTop="20dp"
-                    android:text="@string/btn_reapply"
-                    app:icon="@drawable/ic_refresh"
-                    app:iconGravity="textStart" />
             </LinearLayout>
         </androidx.core.widget.NestedScrollView>
     </FrameLayout>

@@ -1,6 +1,7 @@
 package dev.dimmer.app
 
 import android.content.Context
+import android.os.Build
 import android.provider.Settings
 
 /**
@@ -120,5 +121,13 @@ class RbcController(private val context: Context, private val prefs: Prefs) {
         const val OPLUS_PANEL_KEY = "oplus_customize_reduce_white_point_key"
 
         fun clampLevel(v: Int): Int = v.coerceIn(0, 100)
+
+        /** 面板层通道仅存在于 OPlus 系（ColorOS/OxygenOS）硬件；其它 ROM 无消费者，写入为空转。 */
+        fun hasPanelLayer(): Boolean {
+            val hay = listOf(Build.BRAND, Build.MANUFACTURER, Build.PRODUCT)
+            return hay.any { h -> h != null && OPLUS_BRANDS.any { h.lowercase().contains(it) } }
+        }
+
+        private val OPLUS_BRANDS = listOf("oppo", "oneplus", "realme", "oplus")
     }
 }

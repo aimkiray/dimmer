@@ -10,7 +10,11 @@ import android.service.quicksettings.TileService
 class DimTileService : TileService() {
 
     private val prefs: Prefs by lazy { Prefs(this) }
-    private val controller: RbcController by lazy { RbcController(this, prefs) }
+    // applicationContext：controller 不持 Service，防生命周期外引用泄漏（与 MainActivity 同约定）
+    private val controller: RbcController by lazy { RbcController(applicationContext, prefs) }
+    private val warm: NightWarmController by lazy {
+        NightWarmController(applicationContext, prefs, DesatController(prefs))
+    }
 
     override fun onStartListening() {
         super.onStartListening()
@@ -35,7 +39,7 @@ class DimTileService : TileService() {
             val on = currentActivated() == 1
             t.state = if (on) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                t.label = getString(R.string.app_name)
+                t.label = getString(R.string.tile_dim_label)
                 t.subtitle = getString(
                     R.string.tile_subtitle_level,
                     RbcController.clampLevel(controller.readBack().second ?: prefs.lastLevel)
@@ -44,7 +48,7 @@ class DimTileService : TileService() {
                 // API 26–28 无 subtitle：等级并入 label 兜底显示
                 t.label = getString(
                     R.string.tile_label_level,
-                    getString(R.string.app_name),
+                    getString(R.string.tile_dim_label),
                     RbcController.clampLevel(controller.readBack().second ?: prefs.lastLevel)
                 )
             }
@@ -59,7 +63,14 @@ class DimTileService : TileService() {
             return
         }
         val on = currentActivated() == 1
-        val r = if (on) controller.turnOff() else controller.turnOn(prefs.lastLevel)
+        val r = if (on) {
+            controller.turnOff().also {
+                // 调暗关闭联动释放暖色（夜灯态独立于 RBC 存活，不放会成僵尸暖色）
+                if (it is RbcController.Result.Ok) warm.releaseAfterDimOff()
+            }
+        } else {
+            controller.turnOn(prefs.lastLevel)
+        }
         when (r) {
             // 镜像不在此改：controller 写成功才同步 masterOn，写失败由 lastApplyOk 承载
             // （Denied 不记失败，键可能已部分写入）；Denied/Failed 路径对称——都只刷新磁贴（Denied 另拉门界面）

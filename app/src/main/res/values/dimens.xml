@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 内容区水平内边距：窄屏贴边 20dp -->
+    <dimen name="content_side_pad">20dp</dimen>
+</resources>

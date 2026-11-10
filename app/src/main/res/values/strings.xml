@@ -17,22 +17,39 @@
     <string name="msg_copy_failed">复制失败，请长按命令文本手动复制</string>
 
     <!-- 主界面 -->
-    <string name="hero_title">颜色层</string>
-    <string name="master_switch_desc">颜色层开关</string>
+    <string name="hero_title">极暗</string>
+    <string name="master_switch_desc">极暗开关</string>
     <string name="state_on">已开启</string>
     <string name="state_off">已关闭</string>
-    <string name="state_inactive">未生效 · 点「重新写入」恢复</string>
-    <string name="state_unavailable">已开启 · 本机无法回读状态</string>
+    <string name="state_inactive">未生效 · 在「诊断与说明」中重新写入</string>
+    <string name="state_unavailable">已开启 · 扩展极暗范围（降低白点值）</string>
     <string name="level_label">强度</string>
-    <string name="slider_desc">颜色层强度</string>
+    <string name="slider_desc">极暗强度</string>
     <string name="panel_title">面板层</string>
-    <string name="panel_sub">硬件级降白点，与颜色层叠加</string>
+    <string name="panel_sub">硬件级降白点，与极暗叠加</string>
+    <string name="panel_sub_unsupported">当前设备无此通道，降白点由极暗实现</string>
+    <string name="value_unsupported">不支持</string>
     <string name="panel_switch_desc">面板层开关</string>
+    <string name="warm_title">暖色</string>
+    <string name="warm_sub">经系统夜灯通道调暖，平滑过渡不闪屏</string>
+    <string name="warm_need_rbc">暖色需先开启调暗</string>
+    <string name="warm_release_failed">暖色释放失败，请在系统设置中关闭「护眼模式」</string>
+    <string name="warm_slider_desc">暖色强度</string>
+    <string name="sat_title">降饱和</string>
+    <string name="sat_sub">降低画面色彩浓度，与极暗互不影响</string>
+    <string name="sat_sub_permission">Shizuku 已连接，点按本行授权后可用</string>
+    <string name="sat_sub_unavailable">连接电脑激活 Shizuku 后可用</string>
+    <string name="sat_permission_denied">Shizuku 授权被拒绝</string>
+    <string name="sat_permission_permanent">已在 Shizuku 中拒绝授权，请到 Shizuku 设置中开启</string>
+    <string name="sat_slider_desc">降饱和强度</string>
+    <string name="sat_preview_desc">降饱和效果预览，彩色随设置实时褪色</string>
+    <string name="section_color">色彩调节</string>
+    <string name="section_device">设备专属</string>
     <string name="section_automation">自动化</string>
     <string name="persist_title">跨重启保持</string>
-    <string name="persist_sub">重启后系统保留颜色层设置</string>
+    <string name="persist_sub">重启后系统保留极暗设置</string>
     <string name="boot_title">开机恢复</string>
-    <string name="boot_sub">开机后自动重新写入颜色层</string>
+    <string name="boot_sub">开机后自动重新写入极暗</string>
     <string name="reapply_title">自动纠正</string>
     <string name="reapply_sub">被系统设置改动时自动恢复</string>
     <string name="diag_title">诊断与说明</string>
@@ -41,7 +58,7 @@
 
     <!-- 诊断底部弹层 -->
     <string name="sheet_system_status">当前状态</string>
-    <string name="diag_switch_label">颜色层</string>
+    <string name="diag_switch_label">极暗</string>
     <string name="diag_level_label">强度</string>
     <string name="diag_persist_label">跨重启保持</string>
     <string name="diag_panel_label">面板层</string>
@@ -51,16 +68,25 @@
     <string name="denied_local_str">无法读取 · 记录：%1$s</string>
     <string name="denied_local_int">无法读取 · 记录：%1$d</string>
     <string name="sheet_denied_note">部分系统不允许应用读取设置，此时显示本机记录。</string>
-    <string name="sheet_verify_header">验证颜色层强度</string>
+    <string name="sheet_verify_header">验证极暗强度</string>
     <string name="sheet_verify_body">实际强度（rbcStrength）只能在电脑上查看，执行下面的命令即可。连接多台设备时，在 adb 后加 -s 和序列号。</string>
     <string name="sheet_usage_header">使用说明</string>
-    <string name="usage_1">• 颜色层：Android 原生「降低亮色」，强度 0–100，可超过系统设置的上限 50。</string>
-    <string name="usage_2">• 面板层：即系统「降低白点值」开关，由屏幕硬件处理，和颜色层叠加。两层都开最暗。</string>
-    <string name="usage_3">• 不要拖动系统设置里的「降低白点值」滑块，它会把颜色层强度改回 50 以内；开启「自动纠正」可自动恢复。</string>
-    <string name="usage_4">• 不修改系统亮度。自动纠正只在应用运行时生效，其它时候可用快捷设置磁贴、开机恢复或「重新写入」。</string>
+    <string name="usage_1">• 极暗：Android 原生「降低亮色」，扩展系统极暗范围（即「降低白点值」），可细调 0–100 强度。</string>
+    <string name="usage_2">• 面板层：即系统「降低白点值」开关，由屏幕硬件处理，和极暗叠加。两层都开最暗。</string>
+    <string name="usage_3">• 不要拖动系统设置里的「降低白点值」滑块，它会改写极暗强度；开启「自动纠正」可自动恢复。</string>
+    <string name="usage_4">• 不修改系统亮度。自动纠正只在应用运行时生效，其它时候可用快捷设置磁贴、开机恢复，或在「诊断与说明」中重新写入。</string>
+    <string name="github_link_text">GitHub · aimkiray/dimmer</string>
+    <string name="github_open_cd">打开 GitHub 项目页</string>
+    <string name="update_check">检查更新</string>
+    <string name="update_checking">正在检查…</string>
+    <string name="update_latest">已是最新版本</string>
+    <string name="update_available">发现新版本 %1$s · 前往下载</string>
+    <string name="update_failed">检查失败，点击重试</string>
+    <string name="msg_open_link_failed">无法打开链接</string>
 
     <!-- 磁贴 -->
     <string name="tile_label_unauthorized">Dimmer·未授权</string>
+    <string name="tile_dim_label">Dimmer·开关</string>
     <string name="tile_preset_label">Dimmer·强度</string>
     <string name="tile_preset_label_level">Dimmer·强度 %1$d</string>
     <string name="tile_subtitle_level">强度 %1$d</string>
